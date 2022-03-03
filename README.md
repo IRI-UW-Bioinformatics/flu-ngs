@@ -7,14 +7,15 @@ Influenza virus next generation sequence analysis pipeline.
 
 Requirements
 
-- [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is used for generating quality control reports of the raw reads. On debian do: `$ apt install fastqc=0.11.9+dfsg-4`.
+- [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is used for generating quality control reports of the raw reads. Developed with 0.11.9. On debian do: `$ apt install fastqc=0.11.9+dfsg-4`.
+- [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used to trim adapters off reads. Developed with version 0.39. On debian do `$ apt install trimmomatic=0.39+dfsg-2`.
 
 ## Usage
 
-Reads should be placed in a `reads` directory with the following structure. It is fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix).
+Reads should be placed in a `raw` directory with the following structure. It is fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix).
 
 ```
-reads/
+raw/
 ├── trimlog.fas
 ├── YK_2832
 │   ├── YK_2832_1.fastq
@@ -42,10 +43,12 @@ Specify sample names in a file called `config.json`:
 }
 ```
 
-Then run quality control on these samples using:
+Then run trimming and quality control on these samples:
 
 ```bash
-snakemake --snakefile workflow/quality-control.smk -c 1
+snakemake --snakefile workflow/trim-qc.smk -c 8
 ```
 
-And inspect the HTML output in `results/qc`.
+(`-c 8` tells snakemake to use 8 cores, if they're available, so tweak this as you see fit.)
+
+And inspect the HTML output in `results/qc-raw` and `results/qc-trimmed`.

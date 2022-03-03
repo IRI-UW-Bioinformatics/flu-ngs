@@ -2,4 +2,5 @@
 .snakemake
 config.json
 results
-reads
+raw
+trimmed
