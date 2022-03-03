@@ -1,0 +1,5 @@
+.vscode
+.snakemake
+config.json
+results
+reads
