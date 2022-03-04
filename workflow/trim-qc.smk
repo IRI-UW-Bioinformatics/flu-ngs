@@ -12,16 +12,15 @@ rule all:
 
 
 wildcard_constraints:
-    fastq=".fastq$",
     pair="(un)?paired",
     n="1|2"
 
 
 rule unzip:
     input:
-        "{fastq}.gz"
+        "raw/{sample}/{sample}_{n}.fastq.gz"
     output:
-        "{fastq}"
+        "raw/{sample}/{sample}_{n}.fastq"
     shell:
         "gunzip {input}"
 
@@ -54,6 +53,6 @@ rule trim:
         "trimmed/{sample}/{sample}_2_paired.fastq",
         "trimmed/{sample}/{sample}_2_unpaired.fastq"
     log:
-        "trimmed/{sample}/trimmomatic.log"
+        "logs/trimmomatic_{sample}.log"
     shell:
         "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 &> {log}"
