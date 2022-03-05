@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import vcf
 from Bio import SeqIO
+from Bio.Seq import Seq
 import pandas as pd
 
 
