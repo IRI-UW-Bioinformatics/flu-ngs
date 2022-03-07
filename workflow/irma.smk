@@ -10,15 +10,15 @@ validate(config, schema="schemas/config-schema.json")
 rule all:
     input:
         expand(
-            "results/variants/{sample}_{group}/{sample}_{group}.xlsx",
+            "results/variants/{sample}_{pair}/{sample}_{pair}.xlsx",
             sample=config["samples"],
-            group=["paired", "combined"]
+            pair=["paired", "combined"]
         )
 
 
 wildcard_constraints:
     n="1|2",
-    group="(paired)|(combined)"    
+    pair="(paired)|(combined)"    
 
 
 rule combine_paired_unpaired:
@@ -33,22 +33,22 @@ rule combine_paired_unpaired:
 
 checkpoint irma:
     input:
-        "trimmed/{sample}/{sample}_1_{group}.fastq",
-        "trimmed/{sample}/{sample}_2_{group}.fastq",
+        "trimmed/{sample}/{sample}_1_{pair}.fastq",
+        "trimmed/{sample}/{sample}_2_{pair}.fastq",
     output:
-        directory("results/irma/{sample}_{group}")
+        directory("results/irma/{sample}_{pair}")
     log:
-        "logs/irma_{sample}_{group}.log"
+        "logs/irma_{sample}_{pair}.log"
     shell:
         "IRMA FLU {input} {output} > {log}"
 
 
 rule write_gff:
     input:
-        "results/irma/{sample}_{group}/{segment}.fasta"
+        "results/irma/{sample}_{pair}/{segment}.fasta"
     output:
-        gff="results/irma/{sample}_{group}/{segment}.gff",
-        gffgz="results/irma/{sample}_{group}/{segment}.gff.gz"
+        gff="results/irma/{sample}_{pair}/{segment}.gff",
+        gffgz="results/irma/{sample}_{pair}/{segment}.gff.gz"
     shell:
         """
         workflow/scripts/write-gff.py --fasta {input} > {output.gff}
@@ -59,14 +59,19 @@ rule write_gff:
 
 rule summarise_variants:
     input:
-        vcf="results/irma/{sample}_{group}/{segment}.vcf",
-        fas="results/irma/{sample}_{group}/{segment}.fasta",
-        gff="results/irma/{sample}_{group}/{segment}.gff.gz"
+        vcf="results/irma/{sample}_{pair}/{segment}.vcf",
+        fas="results/irma/{sample}_{pair}/{segment}.fasta",
+        gff="results/irma/{sample}_{pair}/{segment}.gff.gz"
     output:
-        "results/variants/{sample}_{group}/{segment}.tsv"
+        "results/variants/{sample}_{pair}/{segment}.tsv"
     shell:
         """
-        vep -i {input.vcf} --fasta {input.fas} --gff {input.gff} --tab --output_file {output} --format vcf
+        vep --input_file {input.vcf} \
+            --output_file {output} \
+            --gff {input.gff} \
+            --fasta {input.fas} \
+            --tab \
+            --format vcf  # stops error with empty VCF files 
         """
 
 
@@ -76,13 +81,13 @@ def aggregate_segments(wildcards):
     """
     irma_out_dir = checkpoints.irma.get(**wildcards).output[0]
     segments = [file[:-4] for file in os.listdir(irma_out_dir) if file.endswith(".vcf")]
-    return expand("results/variants/{sample}_{group}/{segment}.tsv", segment=segments, **wildcards)
+    return expand("results/variants/{sample}_{pair}/{segment}.tsv", segment=segments, **wildcards)
 
 
 rule aggregate_summary_tsvs:
     input:
         aggregate_segments
     output:
-        "results/variants/{sample}_{group}/{sample}_{group}.xlsx"
+        "results/variants/{sample}_{pair}/{sample}_{pair}.xlsx"
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output} --comment '##'"
