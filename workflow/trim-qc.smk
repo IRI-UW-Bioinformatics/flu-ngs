@@ -30,6 +30,8 @@ rule raw_quality_control:
         "raw/{sample}/{sample}_{n}.fastq"
     output:
         "results/qc-raw/{sample}_{n}_fastqc.html"
+    conda:
+        "envs/fastqc.yaml"
     shell:
         "fastqc --outdir results/qc-raw --format fastq --quiet {input}"
 
@@ -39,6 +41,8 @@ rule trimmed_quality_control:
         "trimmed/{sample}/{sample}_{n}_{pair}.fastq"
     output:
         "results/qc-trimmed/{sample}_{n}_{pair}_fastqc.html"
+    conda:
+        "envs/fastqc.yaml"
     shell:
         "fastqc --outdir results/qc-trimmed --format fastq --quiet {input}"
 
@@ -54,5 +58,7 @@ rule trim:
         "trimmed/{sample}/{sample}_2_unpaired.fastq"
     log:
         "logs/trimmomatic_{sample}.log"
+    conda:
+        "envs/trimmomatic.yaml"
     shell:
         "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 &> {log}"

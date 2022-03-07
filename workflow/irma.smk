@@ -39,6 +39,8 @@ checkpoint irma:
         directory("results/irma/{sample}_{pair}")
     log:
         "logs/irma_{sample}_{pair}.log"
+    conda:
+        "envs/irma.yaml"
     shell:
         "IRMA FLU {input} {output} > {log}"
 
@@ -49,6 +51,8 @@ rule write_gff:
     output:
         gff="results/irma/{sample}_{pair}/{segment}.gff",
         gffgz="results/irma/{sample}_{pair}/{segment}.gff.gz"
+    conda:
+        "envs/tabix.yaml"
     shell:
         """
         workflow/scripts/write-gff.py --fasta {input} > {output.gff}
@@ -64,6 +68,8 @@ rule summarise_variants:
         gff="results/irma/{sample}_{pair}/{segment}.gff.gz"
     output:
         "results/variants/{sample}_{pair}/{segment}.tsv"
+    conda:
+        "envs/vep.yaml"
     shell:
         """
         vep --input_file {input.vcf} \
