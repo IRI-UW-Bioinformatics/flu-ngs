@@ -43,14 +43,31 @@ checkpoint irma:
         "IRMA FLU {input} {output} > {log}"
 
 
+rule write_gff:
+    input:
+        "results/irma/{sample}_{group}/{segment}.fasta"
+    output:
+        gff="results/irma/{sample}_{group}/{segment}.gff",
+        gffgz="results/irma/{sample}_{group}/{segment}.gff.gz"
+    shell:
+        """
+        workflow/scripts/write-gff.py --fasta {input} > {output.gff}
+        bgzip -c {output.gff} > {output.gffgz}
+        tabix -p gff {output.gffgz}
+        """
+
+
 rule summarise_variants:
     input:
         vcf="results/irma/{sample}_{group}/{segment}.vcf",
-        ref="results/irma/{sample}_{group}/{segment}.fasta"
+        fas="results/irma/{sample}_{group}/{segment}.fasta",
+        gff="results/irma/{sample}_{group}/{segment}.gff.gz"
     output:
-        "results/variants/{sample}_{group}/{segment}.csv"
+        "results/variants/{sample}_{group}/{segment}.tsv"
     shell:
-        "workflow/scripts/summarise-variants.py --ref {input.ref} --vcf {input.vcf} > {output}"
+        """
+        vep -i {input.vcf} --fasta {input.fas} --gff {input.gff} --tab --output_file {output} --format vcf
+        """
 
 
 def aggregate_segments(wildcards):
@@ -59,13 +76,13 @@ def aggregate_segments(wildcards):
     """
     irma_out_dir = checkpoints.irma.get(**wildcards).output[0]
     segments = [file[:-4] for file in os.listdir(irma_out_dir) if file.endswith(".vcf")]
-    return expand("results/variants/{sample}_{group}/{segment}.csv", segment=segments, **wildcards)
+    return expand("results/variants/{sample}_{group}/{segment}.tsv", segment=segments, **wildcards)
 
 
-rule aggregate_summary_csvs:
+rule aggregate_summary_tsvs:
     input:
         aggregate_segments
     output:
         "results/variants/{sample}_{group}/{sample}_{group}.xlsx"
     shell:
-        "workflow/scripts/combine-csvs.py {input} --excel {output}"
+        "workflow/scripts/combine-tables.py {input} --excel {output}"
