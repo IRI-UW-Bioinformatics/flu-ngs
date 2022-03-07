@@ -3,32 +3,34 @@
 Influenza virus next generation sequence analysis pipeline.
 
 
-## Set up
+## Requirements
 
-Requirements
+- [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is used for generating quality control reports of the raw reads.
+- [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used to trim adapters off reads.
+- [IRMA](https://wonder.cdc.gov/amd/flu/irma/) is used to match reads to flu reference sequences.
+- [VEP](https://grch37.ensembl.org/info/docs/tools/vep/index.html) is used to identify effect of nucleotide changes at the protein level.
+- [tabix](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3042176/) is required to preprocess files for VEP.
+- bgzip & gunzip are used for (de)compression.
 
-- [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is used for generating quality control reports of the raw reads. Developed with 0.11.9. On debian do: `$ apt install fastqc=0.11.9+dfsg-4`.
-- [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used to trim adapters off reads. Developed with version 0.39. On debian do `$ apt install trimmomatic=0.39+dfsg-2`.
+Versions are listed in `workflow/envs/*.yaml`.
 
-## Usage
+## Quality control
 
-Reads should be placed in a `raw` directory with the following structure. It is fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix).
+Reads should be placed in a `raw` directory with the following structure. It is fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix). It is expected that the forward and reverse reads will be in `{sample}_1.fastq` and `{sample}_2.fastq` files. Either rename files accordingly or ask David to program more flexibility. `trimlog.fas` should contain the adapters.
 
 ```
-raw/
+raw
 ├── trimlog.fas
 ├── YK_2832
 │   ├── YK_2832_1.fastq
-│   ├── YK_2832_2.fastq
-│   └── YK_2832_final_bwa.bam  # Optional
+│   └── YK_2832_2.fastq
 ├── YK_2833
 │   ├── YK_2833_1.fastq
-│   ├── YK_2833_2.fastq
-│   └── YK_2833_final_bwa.bam  # Optional
-└── YK_2834
-    ├── YK_2834_1.fastq
-    ├── YK_2834_2.fastq
-    └── YK_2834_final_bwa.bam  # Optional
+│   └── YK_2833_2.fastq
+├── YK_2834
+│   ├── YK_2834_1.fastq
+│   └── YK_2834_2.fastq
+...
 ```
 
 Specify sample names in a file called `config.json`:
@@ -46,9 +48,23 @@ Specify sample names in a file called `config.json`:
 Then run trimming and quality control on these samples:
 
 ```bash
-snakemake --snakefile workflow/trim-qc.smk -c 8
+snakemake --snakefile workflow/trim-qc.smk --cores all
 ```
 
-(`-c 8` tells snakemake to use 8 cores, if they're available, so tweak this as you see fit.)
+Change the value of `cores` as you like.
 
-And inspect the HTML output in `results/qc-raw` and `results/qc-trimmed`.
+Inspect the HTML output in `results/qc-raw` and `results/qc-trimmed`.
+
+## IRMA
+
+Based on the QC results, you could at this point remove samples from `config.json` if you don't want IRMA to waste time analysing them.
+
+Run the IRMA step using:
+
+```bash
+snakemake --snakefile workflow/irma.smk --cores all
+```
+
+When finished, a summary of the variants found is saved in an excel sheet in `results/variants/{sample}_{pair}/{sample}_{pair}.xlsx"` where `{pair}` is either `combined` or `paired`.
+
+By default all steps are run for paired and combined (paired and unpaired) reads. This might approximately double the runtime compared to only running, say, combined. This would be fairly trivial to alter.
