@@ -85,4 +85,4 @@ rule aggregate_summary_tsvs:
     output:
         "results/variants/{sample}_{group}/{sample}_{group}.xlsx"
     shell:
-        "workflow/scripts/combine-tables.py {input} --excel {output}"
+        "workflow/scripts/combine-tables.py {input} --excel {output} --comment '##'"
