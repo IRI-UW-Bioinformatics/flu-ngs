@@ -1,0 +1,4 @@
+{name}	flu-ngs	gene	{start}	{end}	.	+	.	ID=gene1
+{name}	flu-ngs	transcript	{start}	{end}	.	+	.	ID={transcript_id};Parent=gene1;biotype=protein_coding
+{name}	flu-ngs	exon	{start}	{end}	.	+	.	ID=exon1;Parent={transcript_id}
+{name}	flu-ngs	CDS	{start}	{end}	.	+	0	ID=cds1;Parent={transcript_id}
