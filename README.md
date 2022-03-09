@@ -9,6 +9,7 @@ Influenza virus next generation sequence analysis pipeline.
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used to trim adapters off reads.
 - [IRMA](https://wonder.cdc.gov/amd/flu/irma/) is used to match reads to flu reference sequences.
 - [VEP](https://grch37.ensembl.org/info/docs/tools/vep/index.html) is used to identify effect of nucleotide changes at the protein level.
+  - VEP is written in Perl and requires a in the data I have been using to develop the pipelinemodule called Bundle::DBI. Install it with `perl -MCPAN -e 'install Bundle::DBI'`
 - [tabix](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3042176/) is required to preprocess files for VEP.
 - bgzip & gunzip are used for (de)compression.
 
@@ -33,7 +34,7 @@ raw
 ...
 ```
 
-Specify sample names in a file called `config.json`:
+Specify sample names in a file called `config.json`.
 
 ```
 {
@@ -41,9 +42,15 @@ Specify sample names in a file called `config.json`:
     "YK_2832",
     "YK_2833",
     "YK_2834"
+  ],
+  "pair": [
+    "combined"
   ]
 }
 ```
+
+`"pair": ["combined"]` tells the pipeline to analyse paired and unpaired reads together.
+If you wanted to also run, say, paired reads alone, and unpaired reads alone you would use `"pair": ["combined", "paired", "unpaired"]`.
 
 Then run trimming and quality control on these samples:
 
@@ -66,5 +73,3 @@ snakemake --snakefile workflow/irma.smk --cores all
 ```
 
 When finished, a summary of the variants found is saved in an excel sheet in `results/variants/{sample}_{pair}/{sample}_{pair}.xlsx"` where `{pair}` is either `combined` or `paired`.
-
-By default all steps are run for paired and combined (paired and unpaired) reads. This might approximately double the runtime compared to only running, say, combined. This would be fairly trivial to alter.

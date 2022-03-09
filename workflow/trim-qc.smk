@@ -8,7 +8,7 @@ validate(config, schema="schemas/config-schema.json")
 rule all:
     input:
         expand("results/qc-raw/{sample}_{n}_fastqc.html", sample=config["samples"], n=[1, 2]),
-        expand("results/qc-trimmed/{sample}_{n}_{pair}_fastqc.html", sample=config["samples"], n=[1, 2], pair=["paired", "unpaired"]),
+        expand("results/qc-trimmed/{sample}_{n}_{pair}_fastqc.html", sample=config["samples"], n=[1, 2], pair=config["pair"]),
 
 
 wildcard_constraints:
