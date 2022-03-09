@@ -18,10 +18,12 @@ if __name__ == "__main__":
             Alternatively, pass either A_MP, A_PA or A_PB1 to the --segment keyword
             argument to write a predefined GFF file. If one of these segments is passed to
             this flag then the predefined GFF file is written, and the --fasta argument is
-            ignored.
+            ignored for the purpose of writing the GFF file. The --fasta file is still
+            required to check that the sequence is the correct length for the predefined
+            GFF file.
             """,
     )
-    parser.add_argument("--fasta", help="FASTA file.", required=False)
+    parser.add_argument("--fasta", help="FASTA file.", required=True)
     parser.add_argument(
         "--segment", help="A segment with a predefined GFF file.", required=False
     )
@@ -33,17 +35,39 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.segment in {"A_MP", "A_PA", "A_PB1"}:
+    with open(args.fasta) as fobj:
+        record = next(SeqIO.parse(fobj, format="fasta"))
+
+    known_length = {"A_MP": 982, "A_PA": 2151, "A_PB1": 2274}
+
+    if args.segment in known_length:
+
+        # Lengths of IRMA reference segments GFF files define where the splice sites are.
+        # These were written w.r.t the IRMA reference sequence. So, if the consensus fasta
+        # sequence differs in length to the reference, then the splice sites defined in
+        # the GFF probably won't be correct. (Even if they are the same length they
+        # _might_ not be correct...)
+
+        if known_length[args.segment] != len(record):
+            raise ValueError(
+                """
+                Length of FASTA ({}) differs from IRMA reference ({}) used to write splice
+                positions defined in GFF file.
+                """.format(
+                    len(record), expect[args.segment]
+                )
+            )
+
         path = os.path.join("workflow", "gff", "{}.gff".format(args.segment))
+
         with open(path) as fobj:
             gff = fobj.read()
 
     else:
-        with open(args.fasta) as fobj:
-            record = next(SeqIO.parse(fobj, format="fasta"))
 
         path = os.path.join("workflow", "gff", "generic_template.txt")
         with open(path) as fobj:
+
             template = fobj.read()
             gff = template.format(
                 name=record.description,
