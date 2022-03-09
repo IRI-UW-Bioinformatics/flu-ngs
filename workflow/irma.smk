@@ -53,9 +53,13 @@ rule write_gff:
         gffgz="results/irma/{sample}_{pair}/{segment}.gff.gz"
     conda:
         "envs/tabix.yaml"
+    log:
+        "logs/write_gff_{sample}_{pair}_{segment}.log"
     shell:
         """
-        workflow/scripts/write-gff.py --fasta {input} > {output.gff}
+        workflow/scripts/write-gff.py --fasta {input} \
+            --segment {wildcards.segment} \
+            --transcript_id {wildcards.segment} 2> {log} > {output.gff}
         bgzip -c {output.gff} > {output.gffgz}
         tabix -p gff {output.gffgz}
         """
@@ -78,6 +82,10 @@ rule summarise_variants:
             --fasta {input.fas} \
             --tab \
             --format vcf  # stops error with empty VCF files 
+
+        # Remove upstream and downstream variants
+        egrep -v "intron_variant|downstream_gene_variant|upstream_gene_variant" {output} > {output}.tmp
+        mv {output}.tmp {output}
         """
 
 
