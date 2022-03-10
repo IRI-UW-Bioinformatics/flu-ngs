@@ -45,6 +45,15 @@ checkpoint irma:
         "IRMA FLU {input} {output} > {log}"
 
 
+rule trim_trailing_tabs:
+    input:
+        "results/irma/{sample}_{pair}/tables/{table}.txt"
+    output:
+        "results/irma/{sample}_{pair}/tables/{table}.tsv"
+    shell:
+        "sed 's/\t$//g' < {input} > {output}"
+
+
 rule write_gff:
     input:
         "results/irma/{sample}_{pair}/{segment}.fasta"
@@ -71,7 +80,7 @@ rule summarise_variants:
         fas="results/irma/{sample}_{pair}/{segment}.fasta",
         gff="results/irma/{sample}_{pair}/{segment}.gff.gz"
     output:
-        "results/variants/{sample}_{pair}/{segment}.tsv"
+        "results/vep/{sample}_{pair}/{segment}.tsv"
     conda:
         "envs/vep.yaml"
     shell:
@@ -81,11 +90,31 @@ rule summarise_variants:
             --gff {input.gff} \
             --fasta {input.fas} \
             --tab \
+            --no_stats \
             --format vcf  # stops error with empty VCF files 
 
         # Remove upstream and downstream variants
         egrep -v "intron_variant|downstream_gene_variant|upstream_gene_variant" {output} > {output}.tmp
         mv {output}.tmp {output}
+        """
+
+
+rule merge_irma_vep:
+    input:
+        vep="results/vep/{sample}_{pair}/{segment}.tsv",
+        irma_var="results/irma/{sample}_{pair}/tables/{segment}-variants.tsv",
+        irma_ins="results/irma/{sample}_{pair}/tables/{segment}-insertions.tsv",
+        irma_del="results/irma/{sample}_{pair}/tables/{segment}-deletions.tsv"
+    output:
+        "results/variants/{sample}_{pair}/{segment}.tsv"
+    shell:
+        """
+        workflow/scripts/merge-vep-irma.py \
+            --vep {input.vep} \
+            --irma-var {input.irma_var} \
+            --irma-del {input.irma_del} \
+            --irma-ins {input.irma_ins} \
+            --fasta-consensus results/irma/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
         """
 
 
