@@ -10,7 +10,7 @@ validate(config, schema="schemas/config-schema.json")
 rule all:
     input:
         expand(
-            "results/variants/{sample}_{pair}/{sample}_{pair}.xlsx",
+            "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.xlsx",
             sample=config["samples"],
             pair=["paired", "combined"]
         )
@@ -117,6 +117,13 @@ rule merge_irma_vep:
             --fasta-consensus results/irma/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
         """
 
+rule multiple_changes_in_codon:
+    input:
+        "results/variants/{sample}_{pair}/{segment}.tsv"
+    output:
+        "results/variants-mcc/{sample}_{pair}/{segment}.tsv"
+    shell:
+        "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
 def aggregate_segments(wildcards):
     """
@@ -124,13 +131,13 @@ def aggregate_segments(wildcards):
     """
     irma_out_dir = checkpoints.irma.get(**wildcards).output[0]
     segments = [file[:-4] for file in os.listdir(irma_out_dir) if file.endswith(".vcf")]
-    return expand("results/variants/{sample}_{pair}/{segment}.tsv", segment=segments, **wildcards)
+    return expand("results/variants-mcc/{sample}_{pair}/{segment}.tsv", segment=segments, **wildcards)
 
 
 rule aggregate_summary_tsvs:
     input:
         aggregate_segments
     output:
-        "results/variants/{sample}_{pair}/{sample}_{pair}.xlsx"
+        "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.xlsx"
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output} --comment '##'"
