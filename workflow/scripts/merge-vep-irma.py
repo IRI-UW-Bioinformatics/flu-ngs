@@ -91,6 +91,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fasta-consensus", help="FASTA consensus sequence found by IRMA.", required=True
     )
+    parser.add_argument(
+        "--verbose_output",
+        help="Don't remove columns from output that contain superfluous or duplicated "
+        "information.",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args()
 
@@ -138,6 +145,38 @@ if __name__ == "__main__":
 
     df_irma = pd.concat([df_irma_var, df_irma_ins, df_irma_del])
 
-    df_vep.join(df_irma).sort_values(["Feature", "Position"]).rename(
-        columns={"Feature": "Segment"}
-    ).to_csv(sys.stdout, sep="\t")
+    df_out = (
+        df_vep.join(df_irma)
+        .sort_values(["Feature", "Position"])
+        .rename(
+            columns={
+                "Feature": "Segment",
+                "Total": "Total_Reads",
+                "Position": "Reference_Nuc_Position",
+            }
+        )
+    )
+
+    if not args.verbose_output:
+        gz_column = next(
+            column for column in df_vep.columns if column.endswith(".gff.gz")
+        )
+        df_out = df_out.drop(
+            [
+                "Allele",
+                "CDS_position",
+                "DISTANCE",
+                "Existing_variation",
+                "Feature_type",
+                "FLAGS",
+                "Gene",
+                "IMPACT",
+                "SOURCE",
+                "STRAND",
+                "Reference_Name",
+                gz_column,
+            ],
+            axis=1,
+        )
+
+    df_out.to_csv(sys.stdout, sep="\t")
