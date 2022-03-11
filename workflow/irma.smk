@@ -10,9 +10,9 @@ validate(config, schema="schemas/config-schema.json")
 rule all:
     input:
         expand(
-            "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.xlsx",
+            "results/variants-mcc/{sample}_{pair}/all_segments.tsv",
             sample=config["samples"],
-            pair=["paired", "combined"]
+            pair=config["pair"]
         )
 
 
@@ -126,18 +126,15 @@ rule multiple_changes_in_codon:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
 def aggregate_segments(wildcards):
-    """
-    Returns a list of segments found by IRMA.
-    """
     irma_out_dir = checkpoints.irma.get(**wildcards).output[0]
     segments = [file[:-4] for file in os.listdir(irma_out_dir) if file.endswith(".vcf")]
     return expand("results/variants-mcc/{sample}_{pair}/{segment}.tsv", segment=segments, **wildcards)
 
 
-rule aggregate_summary_tsvs:
+rule concat_segements:
     input:
         aggregate_segments
     output:
-        "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.xlsx"
+        "results/variants-mcc/{sample}_{pair}/all_segments.tsv"
     shell:
-        "workflow/scripts/combine-tables.py {input} --excel {output} --comment '##'"
+        "workflow/scripts/concat-tables.py {input} > {output}"
