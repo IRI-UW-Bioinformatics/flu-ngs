@@ -8,7 +8,7 @@ import pandas as pd
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "combine-csvs.py",
+        "combine-tables.py",
         description="""
             Combine multiple flat table files into an excel file with multiple sheets.
             Tables could be comma-separated, tab-separated, or anything understood by the

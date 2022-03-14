@@ -9,11 +9,7 @@ validate(config, schema="schemas/config-schema.json")
 
 rule all:
     input:
-        expand(
-            "results/variants-mcc/{sample}_{pair}/all_segments.tsv",
-            sample=config["samples"],
-            pair=config["pair"]
-        )
+        "results/variants-mcc-all-samples.xlsx"
 
 
 wildcard_constraints:
@@ -135,6 +131,18 @@ rule concat_segements:
     input:
         aggregate_segments
     output:
-        "results/variants-mcc/{sample}_{pair}/all_segments.tsv"
+        "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv"
     shell:
         "workflow/scripts/concat-tables.py {input} > {output}"
+
+rule combine_samples:
+    input:
+        expand(
+            "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv",
+            sample=config["samples"],
+            pair=config["pair"]
+        )
+    output:
+        "results/variants-mcc-all-samples.xlsx"
+    shell:
+        "workflow/scripts/combine-tables.py {input} --excel {output}"
