@@ -1,0 +1,9 @@
+A_NS	flu-ngs	gene	1	{ns1_end}	.	+	.	ID=gene1
+A_NS	flu-ngs	transcript	1	{ns1_end}	.	+	.	ID=A_NS1;Parent=gene1;biotype=protein_coding
+A_NS	flu-ngs	exon	1	{ns1_end}	.	+	.	ID=exon1_1;Parent=A_NS1
+A_NS	flu-ngs	CDS	1	{ns1_end}	.	+	0	ID=cds1;Parent=A_NS1
+A_NS	flu-ngs	transcript	1	{ns2_end}	.	+	.	ID=A_NS2;Parent=gene1;biotype=protein_coding
+A_NS	flu-ngs	exon	1	{ns2_exon1_end}	.	+	.	ID=exon2;Parent=A_NS2
+A_NS	flu-ngs	CDS	1	{ns2_exon1_end}	.	+	0	ID=cds2;Parent=A_NS2
+A_NS	flu-ngs	exon	{ns2_exon2_start}	{ns2_end}	.	+	.	ID=exon3;Parent=A_NS2
+A_NS	flu-ngs	CDS	{ns2_exon2_start}	{ns2_end}	.	+	0	ID=cds3;Parent=A_NS2

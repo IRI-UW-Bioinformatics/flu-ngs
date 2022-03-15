@@ -157,7 +157,14 @@ if __name__ == "__main__":
             GFF file.
             """,
     )
-    parser.add_argument("--fasta", help="FASTA file.", required=True)
+    parser.add_argument("--fasta-in", help="FASTA file.", required=True)
+    parser.add_argument(
+        "--fasta-out",
+        help="""
+            Output fasta file containing sequences of splice variants. Only implemented
+            for NS2 so far.
+            """,
+    )
     parser.add_argument(
         "--segment", help="A segment with a predefined GFF file.", required=False
     )
@@ -169,7 +176,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open(args.fasta) as fobj:
+    with open(args.fasta_in) as fobj:
         record = next(SeqIO.parse(fobj, format="fasta"))
 
     known_length = {"A_MP": 982, "A_PA": 2151, "A_PB1": 2274}
@@ -197,18 +204,55 @@ if __name__ == "__main__":
         with open(path) as fobj:
             gff = fobj.read()
 
-    else:
+    elif args.segment == "A_NS":
+        path = os.path.join("workflow", "gff", "A_NS_template.txt")
 
-        path = os.path.join("workflow", "gff", "generic_template.txt")
         with open(path) as fobj:
-
             template = fobj.read()
-            gff = template.format(
-                name=record.description,
-                start=1,
-                end=len(record),
-                transcript_id=args.transcript_id,
-            )
+
+        donor_loc, accept_loc = find_ns_splice_sites(record.seq)
+
+        # NS1 and NS2 have 193 and 339 additional nts after splice acceptor (AG) respectively
+        ns1_end = accept_loc + 193
+        ns2_end = accept_loc + 339
+
+        # Write NS1 and NS2 sequences
+        if args.fasta_out:
+            ns2_seq = splice_ns(record.seq, donor_loc=donor_loc, accept_loc=accept_loc)
+            with open(args.fasta_out, "w") as fobj:
+                fobj.write(">A_NS1\n")
+                fobj.write(str(record.seq)[:ns1_end] + "\n")
+                fobj.write(">A_NS2\n")
+                fobj.write(str(ns2_seq))
+
+        # donor_loc corresponds to start of AGGT signal. 'GT' is trimmed, leaving 'AG'.
+        # So, the position of the first G is the end of the first exon.
+        ns2_exon1_end = donor_loc + 1
+
+        # accept_loc is the start of the AG splice acceptor signal. In splicing the AG is
+        # lost. So, need the position of the next nucleotide after the AG.
+        ns2_exon2_start = accept_loc + 2
+
+        # +1 for 1-based indexing used in GFF files
+        gff = template.format(
+            ns1_end=ns1_end + 1,
+            ns2_end=ns2_end + 1,
+            ns2_exon1_end=ns2_exon1_end + 1,
+            ns2_exon2_start=ns2_exon2_start + 1,
+        )
+
+    else:
+        path = os.path.join("workflow", "gff", "generic_template.txt")
+
+        with open(path) as fobj:
+            template = fobj.read()
+
+        gff = template.format(
+            name=record.description,
+            start=1,
+            end=len(record),
+            transcript_id=args.transcript_id,
+        )
 
     stderr.write("Used {} to write GFF\n".format(path))
     stdout.write(gff)
