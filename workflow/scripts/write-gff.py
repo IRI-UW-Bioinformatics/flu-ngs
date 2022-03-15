@@ -3,7 +3,141 @@
 import os
 from sys import stderr, stdout
 import argparse
+from typing import Tuple, List
+
 from Bio import SeqIO
+
+
+def findall(sub: str, string: str) -> List[int]:
+    """
+    Return indexes of all substrings in a string
+    """
+    indexes = []
+    append = indexes.append
+    j = len(sub)
+    for i in range(len(string)):
+        if string[i:j] == sub:
+            append(i)
+        i += 1
+        j += 1
+    return indexes
+
+
+def find_ns_splice_donor(seq: str) -> int:
+    """
+    Find the AGGT splice donor signal. Returns an int which is the index of the 'A'
+
+    Notes:
+        In NS1 sequences Gabi has sent the AGGT is on average at position 38.2.
+    """
+    seq = seq.upper()
+    candidates = findall("AGGT", seq)
+
+    if not candidates:
+        raise ValueError(f"No NS1 splice donor site ('AGGT') in {seq}")
+
+    # Splice site should be in the first 100 nucs
+    candidates = filter(lambda x: x < 100, candidates)
+
+    if not candidates:
+        raise ValueError(f"No NS1 splice donor sites ('AGGT') in first 100 nt of {seq}")
+
+    # Choose the site that is closest to position 38.2
+    return min(candidates, key=lambda x: abs(x - 38.2))
+
+
+def find_ns_splice_acceptor(seq: str, donor_loc=None) -> int:
+    """
+    Find the 'AG' splice acceptor signal. Returns an int which is the index of the 'A'.
+
+    Notes:
+        Should be >350 nts downstread of the splice donor location.
+
+    Args:
+        seq (str)
+        donor_loc (int): Location of the splice donor
+    """
+    seq = seq.upper()
+
+    donor_loc = find_ns_splice_donor(seq) if donor_loc is None else donor_loc
+
+    # Find all candidate acceptor sites 350 nts downstream of the donor site
+    candidates = findall("AG", seq[donor_loc + 350 :])
+    candidates = [c + donor_loc + 350 for c in candidates]  # Fix indexing
+
+    # sequence around the splice site should be FQDI
+    candidates = list(
+        filter(
+            lambda x: four_aas_around_splice_site(seq, donor_loc, x) == "FQDI",
+            candidates,
+        )
+    )
+
+    if not candidates:
+        raise ValueError(f"No NS splice acceptor sites in {seq}")
+
+    # Pick candidate that is closest to position 507
+    return min(candidates, key=lambda x: abs(x - 507))
+
+
+def splice_ns(seq: str, donor_loc: int, accept_loc: int) -> str:
+    """
+    Splice an NS sequence given a splice donor and acceptor locations.
+
+    Args:
+        seq (str):
+        donor_loc (int): Location of the AGGT. The 'AG' remains in the
+            transcript, the 'GT' is lost.
+        acceptor_loc (int): Location of the 'AG'. The 'AG' is lost.
+    """
+    seq = seq.upper()
+
+    if (accept_loc - donor_loc) < 350:
+        raise ValueError(
+            f"Splice acceptor signal location ({accept_loc}) should be at least 350 nts downstream of the donor signal ({donor_loc}) location, but it is {accept_loc - donor_loc}"
+        )
+
+    if seq[donor_loc : donor_loc + 4] != "AGGT":
+        raise ValueError(f"No AGGT at position {donor_loc} in {seq}")
+
+    if seq[accept_loc : accept_loc + 2] != "AG":
+        raise ValueError(f"No AG at position {accept_loc} in {seq}")
+
+    return seq[: donor_loc + 2] + seq[accept_loc + 2 :]
+
+
+def four_aas_around_splice_site(seq: str, donor_loc: int, accept_loc: int) -> str:
+    """
+    What are the four amino acids either side of the splice site given a sequence,
+    donor location and acceptor location?
+    """
+    spliced = splice_ns(seq, donor_loc, accept_loc)
+    return extract_12_nts_around_splice_site(spliced, donor_loc).translate()
+
+
+def extract_12_nts_around_splice_site(seq: str, donor_loc: int) -> str:
+    """
+    Start 4 nts downstream of the donor location
+
+            Start of splice donor 'AGGT' signal
+            ⌄     Splice site
+            |     ⌄
+        XXXXTTTCAG|GA...
+        ^
+        Extracts 12 nts from here
+    """
+    start = donor_loc - 4
+    end = start + 12
+    return seq[start:end]
+
+
+def find_ns_splice_sites(seq: str) -> Tuple[int, int]:
+    """
+    Lookup the splice donor and acceptor locations for an NS1 transcript.
+    """
+    donor_loc = find_ns_splice_donor(seq)
+    accept_loc = find_ns_splice_acceptor(seq, donor_loc)
+    return donor_loc, accept_loc
 
 
 if __name__ == "__main__":
