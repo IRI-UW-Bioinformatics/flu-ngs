@@ -124,6 +124,7 @@ rule multiple_changes_in_codon:
     shell:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
+
 def aggregate_segments(wildcards):
     irma_out_dir = checkpoints.irma.get(**wildcards).output[0]
     segments = [file[:-4] for file in os.listdir(irma_out_dir) if file.endswith(".vcf")]
@@ -137,6 +138,7 @@ rule concat_segements:
         "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv"
     shell:
         "workflow/scripts/concat-tables.py {input} > {output}"
+
 
 rule combine_samples:
     input:
