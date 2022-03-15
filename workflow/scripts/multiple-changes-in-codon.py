@@ -88,9 +88,8 @@ def aggregate_multiple_changes_in_codon(df) -> pd.DataFrame:
             **{
                 "Codons": f"{consensus_codon}/{minority_codon}",
                 "Consequence": consequence,
-                "Amino_acids": "/".join(
-                    map(str, sorted(set((consensus_aa, minority_aa))))
-                ),
+                "Consensus_Amino_Acid": consensus_aa,
+                "Minority_Amino_Acid": minority_aa,
                 "Multiple_Changes_In_Codon": "Yes",
                 "Consensus_Allele": consensus_codon,
                 "Minority_Allele": minority_codon,
@@ -114,4 +113,9 @@ if __name__ == "__main__":
             sub if len(sub) == 1 else aggregate_multiple_changes_in_codon(sub)
             for _, sub in df.groupby(["Segment", "Protein_position", "Phase"])
         ]
-        pd.concat(rows).to_csv(sys.stdout, sep="\t")
+        (
+            pd.concat(rows)
+            .eval("Protein_position = Protein_position.astype('int')")
+            .sort_values(["Segment", "Protein_position"])
+            .to_csv(sys.stdout, sep="\t")
+        )

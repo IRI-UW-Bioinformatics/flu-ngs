@@ -6,6 +6,7 @@ from Bio import SeqIO
 
 # Using importlib to handle '-' in .py names
 wg = importlib.import_module("write-gff")
+mvi = importlib.import_module("merge-vep-irma")
 
 
 class TestFindAll(unittest.TestCase):
@@ -132,6 +133,40 @@ class TestSpliceNS(unittest.TestCase):
         msg = f"Splice acceptor signal location \({accept_loc}\) should be at least 350 nts downstream of the donor signal \({donor_loc}\) location, but it is {accept_loc - donor_loc}"
         with self.assertRaisesRegex(ValueError, msg):
             wg.splice_ns(seq, donor_loc, accept_loc)
+
+
+class TestClassifyTransitionTransversion(unittest.TestCase):
+    """
+    Tests for classify_transition_transversion in merge-vep-irma.py.
+    """
+
+    def test_cant_handle_len2_nt_changes(self):
+        """
+        Check throws correct error if passed a mutation containing more than 1 nt.
+        """
+        msg = "Nucleotide must be one of ACGT to be classifed as transition or transversion."
+        with self.assertRaisesRegex(ValueError, msg):
+            mvi.classify_transition_transversion(
+                {"Consensus_Allele": "AT", "Minority_Allele": "CT"}
+            )
+
+    def test_classifies_transition_correctly(self):
+        """
+        A simple test case.
+        """
+        out = mvi.classify_transition_transversion(
+            {"Consensus_Allele": "G", "Minority_Allele": "A"}
+        )
+        self.assertEqual("transition", out)
+
+    def test_classifies_transition_correctly(self):
+        """
+        A simple test case.
+        """
+        out = mvi.classify_transition_transversion(
+            {"Consensus_Allele": "C", "Minority_Allele": "G"}
+        )
+        self.assertEqual("transversion", out)
 
 
 if __name__ == "__main__":

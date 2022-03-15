@@ -66,6 +66,59 @@ def make_index_for_irma_deletions(df):
     return df
 
 
+def classify_transition_transversion(row):
+    """
+    Classify a row of the VEP DataFrame as either a transition or transversion.
+    """
+    nts = [row[col].upper() for col in ["Consensus_Allele", "Minority_Allele"]]
+
+    for nt in nts:
+        if nt not in {"A", "C", "G", "T"}:
+            raise ValueError(
+                "Nucleotide must be one of ACGT to be classifed as transition or transversion."
+            )
+
+    mutation = sorted(nts)
+
+    if mutation == ["A", "G"] or mutation == ["C", "T"]:
+        return "transition"
+    else:
+        return "transversion"
+
+
+def make_vep_df(path):
+    """
+    Make the DataFrame from the VEP file.
+    """
+    df = pd.read_table(
+        path,
+        comment="##",
+        engine="python",
+    )
+
+    # Split amino acids into separate columns
+    df_aa = (
+        df["Amino_acids"]
+        .str.split("/", expand=True)
+        .rename(columns={0: "Consensus_Amino_Acid", 1: "Minority_Amino_Acid"})
+    )
+
+    # Explicitly state the amino acid for the minority variant
+    mask = df_aa["Minority_Amino_Acid"].isnull()
+    df_aa.loc[mask, "Minority_Amino_Acid"] = df_aa.loc[mask, "Consensus_Amino_Acid"]
+
+    return df.join(df_aa).set_index("#Uploaded_variation")
+
+
+def make_irma_var_df(path):
+    """
+    Make a DataFrame from the IRMA variants table.
+    """
+    df = pd.read_table(path).pipe(make_index_for_irma_variants)
+    df["Mutation_Type"] = df.apply(classify_transition_transversion, axis=1)
+    return df.rename(columns={"CDS_position": "Upstream_Position"})
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
@@ -104,14 +157,9 @@ if __name__ == "__main__":
     with open(args.fasta_consensus) as fobj:
         record = next(SeqIO.parse(fobj, format="fasta"))
 
-    df_vep = pd.read_table(
-        args.vep,
-        comment="##",
-        engine="python",
-        index_col=0,
-    )
+    df_vep = make_vep_df(args.vep)
 
-    df_irma_var = pd.read_table(args.irma_var).pipe(make_index_for_irma_variants)
+    df_irma_var = make_irma_var_df(args.irma_var)
 
     df_irma_ins = (
         pd.read_table(args.irma_ins)
@@ -179,4 +227,14 @@ if __name__ == "__main__":
             axis=1,
         )
 
-    df_out.to_csv(sys.stdout, sep="\t")
+    df_out.round(
+        {
+            "Consensus_Frequency": 3,
+            "Minority_Frequency": 3,
+            "Consensus_Average_Quality": 3,
+            "Minority_Average_Quality": 3,
+            "ConfidenceNotMacErr": 3,
+            "PairedUB": 3,
+            "QualityUB": 3,
+        }
+    ).sort_values(["Segment", "Protein_position"]).to_csv(sys.stdout, sep="\t")
