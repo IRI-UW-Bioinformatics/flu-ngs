@@ -2,6 +2,9 @@
 
 import unittest
 import importlib
+from pathlib import Path
+
+import pandas as pd
 from Bio import SeqIO
 
 # Using importlib to handle '-' in .py names
@@ -167,6 +170,16 @@ class TestClassifyTransitionTransversion(unittest.TestCase):
             {"Consensus_Allele": "C", "Minority_Allele": "G"}
         )
         self.assertEqual("transversion", out)
+
+    def test_returns_series_data(self):
+        """
+        Check that a series is returned, using all relevant tables in results.
+        """
+        for path in Path("../../results/irma").glob("*/tables/*-variants.tsv"):
+            with self.subTest(path=path):
+                df = pd.read_table(path).pipe(mvi.make_index_for_irma_variants)
+                output = df.apply(mvi.classify_transition_transversion, axis=1)
+                self.assertIsInstance(output, pd.Series)
 
 
 if __name__ == "__main__":

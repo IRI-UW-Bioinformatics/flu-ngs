@@ -104,8 +104,9 @@ def make_vep_df(path):
     )
 
     # Explicitly state the amino acid for the minority variant
-    mask = df_aa["Minority_Amino_Acid"].isnull()
-    df_aa.loc[mask, "Minority_Amino_Acid"] = df_aa.loc[mask, "Consensus_Amino_Acid"]
+    if "Minority_Amino_Acid" in df_aa:
+        mask = df_aa["Minority_Amino_Acid"].isnull()
+        df_aa.loc[mask, "Minority_Amino_Acid"] = df_aa.loc[mask, "Consensus_Amino_Acid"]
 
     return df.join(df_aa).set_index("#Uploaded_variation")
 
@@ -115,7 +116,9 @@ def make_irma_var_df(path):
     Make a DataFrame from the IRMA variants table.
     """
     df = pd.read_table(path).pipe(make_index_for_irma_variants)
-    df["Mutation_Type"] = df.apply(classify_transition_transversion, axis=1)
+    df["Mutation_Type"] = (
+        df.apply(classify_transition_transversion, axis=1) if not df.empty else []
+    )
     return df.rename(columns={"CDS_position": "Upstream_Position"})
 
 
@@ -227,6 +230,7 @@ if __name__ == "__main__":
             axis=1,
         )
 
+    df_out.index.name = "Variant"
     df_out.round(
         {
             "Consensus_Frequency": 3,

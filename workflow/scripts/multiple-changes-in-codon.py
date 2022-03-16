@@ -79,7 +79,7 @@ def aggregate_multiple_changes_in_codon(df) -> pd.DataFrame:
     def join_values_in_column(col):
         return ", ".join(map(str, sorted(df[col])))
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         {
             **{
                 col: join_values_in_column(col)
@@ -100,11 +100,13 @@ def aggregate_multiple_changes_in_codon(df) -> pd.DataFrame:
         },
         index=[name],
     )
+    df.index.name = "Variant"
+    return df
 
 
 if __name__ == "__main__":
 
-    df = pd.read_table(sys.stdin, index_col=0)
+    df = pd.read_table(sys.stdin, index_col="Variant")
 
     if df.empty:
         df.to_csv(sys.stdout, sep="\t")
