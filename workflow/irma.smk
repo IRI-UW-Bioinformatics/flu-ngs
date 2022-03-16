@@ -9,7 +9,9 @@ validate(config, schema="schemas/config-schema.json")
 
 rule all:
     input:
-        "results/variants-mcc-all-samples.xlsx"
+        "results/xlsx/variants-mcc-by-sample.xlsx",
+        "results/xlsx/variants-mcc-by-segment.xlsx",
+        "results/xlsx/variants-mcc-flat.xlsx"
 
 
 wildcard_constraints:
@@ -148,6 +150,20 @@ rule combine_samples:
             pair=config["pair"]
         )
     output:
-        "results/variants-mcc-all-samples.xlsx"
+        "results/xlsx/variants-mcc-by-sample.xlsx"
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output}"
+
+rule by_segment_summary:
+    input:
+        "results/xlsx/variants-mcc-by-sample.xlsx"
+    output:
+        segment="results/xlsx/variants-mcc-by-segment.xlsx",
+        flat="results/xlsx/variants-mcc-flat.xlsx"
+    shell:
+        """
+        workflow/scripts/make-by-segment-summary.py \
+            --in-excel {input} \
+            --out-segment {output.segment} \
+            --out-flat {output.flat}
+        """
