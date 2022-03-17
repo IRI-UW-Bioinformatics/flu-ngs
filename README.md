@@ -73,3 +73,17 @@ snakemake --snakefile workflow/irma.smk --cores all
 ```
 
 When finished, a summary of the variants found is saved in an excel sheet in `results/variants/{sample}_{pair}/{sample}_{pair}.xlsx"` where `{pair}` is either `combined` or `paired`.
+
+
+## Sorted BAM files
+
+Most software to look at reads alignments require sorted bam files, and/or bam index files.
+I've written a small workflow for generating these for all bam files IRMA generates.
+It requires [samtools](http://www.htslib.org/).
+`.sorted.bam` and `.sorted.bam.bai` files are saved in the same directory as the original `.bam` files.
+Do:
+
+```bash
+snakemake --snakefile workflow/sort-bam.smk --cores all
+```
+
