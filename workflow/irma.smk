@@ -56,7 +56,6 @@ rule write_gff:
     input:
         "results/irma/{sample}_{pair}/{segment}.fasta"
     output:
-        fasta="results/irma/{sample}_{pair}/{segment}.gff.fasta",
         gff="results/irma/{sample}_{pair}/{segment}.gff",
         gffgz="results/irma/{sample}_{pair}/{segment}.gff.gz"
     conda:
@@ -67,7 +66,6 @@ rule write_gff:
         """
         workflow/scripts/write-gff.py \
             --fasta-in {input} \
-            --fasta-out {output.fasta} \
             --segment {wildcards.segment} \
             --transcript_id {wildcards.segment} 2> {log} > {output.gff}
         bgzip -c {output.gff} > {output.gffgz}

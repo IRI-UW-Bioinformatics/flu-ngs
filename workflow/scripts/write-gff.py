@@ -159,13 +159,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--fasta-in", help="FASTA file.", required=True)
     parser.add_argument(
-        "--fasta-out",
-        help="""
-            Output fasta file containing sequences of splice variants. Only implemented
-            for NS2 so far.
-            """,
-    )
-    parser.add_argument(
         "--segment", help="A segment with a predefined GFF file.", required=False
     )
     parser.add_argument(
@@ -217,13 +210,12 @@ if __name__ == "__main__":
         ns2_end = accept_loc + 339
 
         # Write NS1 and NS2 sequences
-        if args.fasta_out:
-            ns2_seq = splice_ns(record.seq, donor_loc=donor_loc, accept_loc=accept_loc)
-            with open(args.fasta_out, "w") as fobj:
-                fobj.write(">A_NS1\n")
-                fobj.write(str(record.seq)[:ns1_end] + "\n")
-                fobj.write(">A_NS2\n")
-                fobj.write(str(ns2_seq))
+        ns2_seq = splice_ns(record.seq, donor_loc=donor_loc, accept_loc=accept_loc)
+        with open(args.fasta_in.replace(".fasta", ".gff.fasta"), "w") as fobj:
+            fobj.write(">A_NS1\n")
+            fobj.write(str(record.seq)[:ns1_end] + "\n")
+            fobj.write(">A_NS2\n")
+            fobj.write(str(ns2_seq))
 
         # donor_loc corresponds to start of AGGT signal. 'GT' is trimmed, leaving 'AG'.
         # So, the position of the first G is the end of the first exon.
