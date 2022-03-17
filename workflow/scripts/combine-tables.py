@@ -2,6 +2,7 @@
 
 from os.path import basename
 import argparse
+import warnings
 
 import pandas as pd
 
@@ -26,10 +27,20 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    seen = set()
+
     with pd.ExcelWriter(args.excel) as writer:
         for table in sorted(args.tables):
             name = basename(table)
             name = name[: name.rindex(".")]
+
+            if name in seen:
+                warnings.warn(
+                    f"""Passed multiple tables that would be called {name}. Only the last
+                    will be in the output."""
+                )
+            else:
+                seen.add(name)
 
             try:
                 df = pd.read_table(
