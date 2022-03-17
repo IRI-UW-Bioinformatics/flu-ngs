@@ -9,9 +9,9 @@ validate(config, schema="schemas/config-schema.json")
 
 rule all:
     input:
-        "results/xlsx/variants-mcc-by-sample.xlsx",
-        "results/xlsx/variants-mcc-by-segment.xlsx",
-        "results/xlsx/variants-mcc-flat.xlsx"
+        "results/xlsx/variants-mcc-by-sample-ordered.xlsx",
+        "results/xlsx/variants-mcc-by-segment-ordered.xlsx",
+        "results/xlsx/variants-mcc-flat-ordered.xlsx"
 
 
 wildcard_constraints:
@@ -166,4 +166,45 @@ rule by_segment_summary:
             --in-excel {input} \
             --out-segment {output.segment} \
             --out-flat {output.flat}
+        """
+
+rule order_columns:
+    input:
+        "{file}.xlsx"
+    output:
+        "{file}-ordered.xlsx"
+    shell:
+        """
+        workflow/scripts/alter-column-order.py \
+            --input {input} \
+            --output {output} \
+            --order \
+                Sample \
+                Variant	\
+                Location \
+                Segment \
+                cDNA_position \
+                Reference_Nuc_Position \
+                Protein_position \
+                Consequence \
+                Amino_acids \
+                Consensus_Amino_Acid \
+                Minority_Amino_Acid \
+                Consensus_Allele \
+                Minority_Allele \
+                Codons \
+                Total_Reads \
+                Consensus_Count \
+                Minority_Count \
+                Consensus_Frequency \
+                Minority_Frequency \
+                Consensus_Average_Quality \
+                Minority_Average_Quality \
+                ConfidenceNotMacErr \
+                PairedUB \
+                QualityUB \
+                Phase \
+                Mutation_Type \
+                Codon_Position \
+                Multiple_Changes_In_Codon
         """
