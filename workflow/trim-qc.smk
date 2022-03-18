@@ -2,7 +2,7 @@ from snakemake.utils import validate, min_version
 
 min_version("7.0.4")
 
-configfile: "config.json"
+configfile: "qc-config.json"
 validate(config, schema="schemas/config-schema.json")
 
 rule all:
@@ -12,7 +12,7 @@ rule all:
 
 
 wildcard_constraints:
-    pair="(un)?paired",
+    pair="((un)?paired)|(combined)",
     n="1|2"
 
 
@@ -62,3 +62,13 @@ rule trim:
         "envs/trimmomatic.yaml"
     shell:
         "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 &> {log}"
+
+
+rule combine_paired_unpaired:
+    input:
+        "trimmed/{sample}/{sample}_{n}_paired.fastq",
+        "trimmed/{sample}/{sample}_{n}_unpaired.fastq"
+    output:
+        "trimmed/{sample}/{sample}_{n}_combined.fastq"
+    shell:
+        "cat {input} > {output}"

@@ -2,7 +2,7 @@ from snakemake.utils import validate, min_version
 
 min_version("7.0.4")
 
-configfile: "config.json"
+configfile: "irma-config.json"
 validate(config, schema="schemas/config-schema.json")
 
 
