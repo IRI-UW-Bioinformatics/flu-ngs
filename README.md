@@ -5,6 +5,18 @@ Influenza virus next generation sequence analysis pipeline.
 
 ## Requirements
 
+### snakemake
+
+The 'pipeline' is really two
+[snakemake](https://snakemake.readthedocs.io/en/stable/) workflows:
+[`workflow/trim-qc.smk`](workflow/trim-qc.smk), which trims reads and runs
+quality control measures, and [`workflow/irma.smk`](workflow/irma.smk) which
+runs IRMA and generates summary output.
+
+### Bioinformatics
+
+These workflows call various other bioinformatics programs:
+
 - [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is used
   for generating quality control reports of the raw reads.
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used to trim
@@ -21,7 +33,18 @@ Influenza virus next generation sequence analysis pipeline.
 
 Versions are listed in `workflow/envs/*.yaml`.
 
-## Using this repo
+### Python
+
+There are several python scripts in [`workflow/scripts`](workflow/scripts) which
+have a couple of dependencies.
+
+Make a python virtual environment and install them with:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Running the pipeline
 
 Each time you have samples to run, I would suggest cloning this repository:
 
@@ -31,11 +54,7 @@ git clone git@github.com:IRI-UW-Bioinformatics/flu-ngs.git <name>
 
 where `<name>` is the name of the directory that you want, then `cd <name>`.
 
-Reads should be placed in a `raw` directory with the following structure. It is
-fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix). It is expected
-that the forward and reverse reads will be in `{sample}_1.fastq` and
-`{sample}_2.fastq` files. Either rename files accordingly or ask David to
-program more flexibility. `trimlog.fas` should contain the adapters.
+Then, put reads in a directory called `raw` with the following structure:
 
 ```
 raw
@@ -52,7 +71,18 @@ raw
 ...
 ```
 
-Specify sample names in a file called `config.json` in the root directory.
+It is fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix).
+
+Forward and reverse reads should be in `{sample}_1.fastq` and `{sample}_2.fastq`
+respectively. Either rename files accordingly or ask David to program more
+flexibility.
+
+`trimlog.fas` should contain the adapters.
+
+## Quality control
+
+The first step is to trim adapters and run quality control. Specify sample names
+in a file called `qc-config.json` in the root directory.
 
 ```
 {
@@ -62,18 +92,19 @@ Specify sample names in a file called `config.json` in the root directory.
     "YK_2834"
   ],
   "pair": [
-    "combined"
+    "paired",
+    "unpaired"
   ]
 }
 ```
 
-`"pair": ["combined"]` tells the pipeline to analyse paired and unpaired reads
-together. If you wanted to also run, say, paired reads alone, and unpaired reads
-alone you would use `"pair": ["combined", "paired", "unpaired"]`.
+`"pair": ["paired", "unpaired"]` tells the pipeline to generate quality control
+reports for paired and unpaired reads separately. You could also add
+`"combined"` to this array, which would generate one QC report of the paired and
+unpaired reads together. This array could also contain only `"combined"`. Do
+whatever makes sense for your analysis.
 
-## Quality control
-
-Run trimming and quality control on these samples:
+Then, run trimming and quality control on these samples by calling snakemake:
 
 ```bash
 snakemake --snakefile workflow/trim-qc.smk --cores all
@@ -81,14 +112,15 @@ snakemake --snakefile workflow/trim-qc.smk --cores all
 
 Change the value of `cores` as you like.
 
-Inspect the HTML output in `results/qc-raw` and `results/qc-trimmed`.
+HTML QC reports are saved in `results/qc-raw` and `results/qc-trimmed`.
 
 ## IRMA
 
-Based on the QC results, you could at this point remove samples from
-`config.json` if you don't want IRMA to waste time analysing them. If you had
-set `"pair": ["combined", "paired", "unpaired"]` to look at different the
-quality of different types of reads, you may want to now set `"pair":
+A config file `irma-config.json` is required to run IRMA. It could be identical
+to `qc-config.json`, but you could remove samples if any didn't pass QC.
+
+If you had set `"pair": ["combined", "paired", "unpaired"]` to look at different
+the quality of different types of reads, you may want to now set `"pair":
 ["combined"]` to just analyse the combined paired and unpaired reads, rather
 than conduct three analyses in parallel.
 
@@ -107,7 +139,9 @@ When finished three summary files are generated:
 - `results/xlsx/variants-mcc-flat-ordered.xlsx`. This contains all variants in
   one flat sheet.
 
-## Sorted BAM files
+---
+
+## Bonus: sorted BAM files
 
 Most software to look at reads alignments require sorted bam files, and/or bam
 index files. I've written a small workflow for generating these for all bam
