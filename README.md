@@ -44,6 +44,17 @@ Make a python virtual environment and install them with:
 pip install -r requirements.txt
 ```
 
+Read more about what python virtual environments are, why they are useful, and
+how to set them up
+[here](https://realpython.com/python-virtual-environments-a-primer/).
+
+You could use the same virtual environment for each analysis. If you have one
+setup, then activate it with:
+
+```bash
+source ~/.virtualenvs/flu-ngs-env/bin/activate
+```
+
 ## Running the pipeline
 
 Each time you have samples to run, I would suggest cloning this repository:
