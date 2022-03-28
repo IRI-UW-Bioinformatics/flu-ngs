@@ -32,8 +32,10 @@ rule raw_quality_control:
         "results/qc-raw/{sample}_{n}_fastqc.html"
     conda:
         "envs/fastqc.yaml"
+    log:
+        "logs/fastqc/fastqc_{sample}_{n}.log"
     shell:
-        "fastqc --outdir results/qc-raw --format fastq --quiet {input}"
+        "fastqc --outdir results/qc-raw --format fastq --quiet {input} 2> {log}"
 
 
 rule trimmed_quality_control:
@@ -43,8 +45,10 @@ rule trimmed_quality_control:
         "results/qc-trimmed/{sample}_{n}_{pair}_fastqc.html"
     conda:
         "envs/fastqc.yaml"
+    log:
+        "logs/fastqc/fastqc_{sample}_{n}_{pair}.log"
     shell:
-        "fastqc --outdir results/qc-trimmed --format fastq --quiet {input}"
+        "fastqc --outdir results/qc-trimmed --format fastq --quiet {input} 2> {log}"
 
 
 rule trim:
