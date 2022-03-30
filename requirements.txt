@@ -1,3 +1,4 @@
 snakemake==7.0.4
 biopython==1.79
 pandas==1.4.1
+openpyxl==3.0.9
