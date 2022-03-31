@@ -110,14 +110,33 @@ if __name__ == "__main__":
 
     if df.empty:
         df.to_csv(sys.stdout, sep="\t")
+
     else:
         rows = [
-            sub if len(sub) == 1 else aggregate_multiple_changes_in_codon(sub)
-            for _, sub in df.groupby(["Segment", "Protein_position", "Phase"])
+            sub_df if len(sub_df) == 1 else aggregate_multiple_changes_in_codon(sub_df)
+            for _, sub_df in df.groupby(["Segment", "Protein_position", "Phase"])
         ]
+
+        # Some variants (e.g. indels) have NaN for Phase. Default behaviour in pandas is
+        # to drop any values that have NaN in a groupby operation. We don't want to drop
+        # the variants just because they don't have a Phase assigned. Explicitly pull out
+        # variants without a phase, and concatenate them, before outputting. To be safe,
+        # also check pull out variants that have NaN "Segment" or "Protein_position".
         (
-            pd.concat(rows)
-            .eval("Protein_position = Protein_position.astype('int')")
+            pd.concat(
+                [
+                    # Rows might be empty if all rows in df have NaN for Phase (or Segment
+                    # or Protein_position)
+                    pd.concat(rows) if rows else None,
+                    df.query("Phase.isna()"),
+                    df.query("Segment.isna()"),
+                    df.query("Protein_position.isna()"),
+                ]
+            )
+            # indels get an integer range for Protein_position. The next line extracts the
+            # first integer in that range. First convert to str incase the input only
+            # contains ints. Leave as an Int64 which can handle NaN values, just in case.
+            .eval("Protein_position = Protein_position.astype('str').str.extract('^(\d+)').astype('Int64')")
             .sort_values(["Segment", "Protein_position"])
             .to_csv(sys.stdout, sep="\t")
         )
