@@ -188,7 +188,7 @@ if __name__ == "__main__":
                 Length of FASTA ({}) differs from IRMA reference ({}) used to write splice
                 positions defined in GFF file.
                 """.format(
-                    len(record), expect[args.segment]
+                    len(record), known_length[args.segment]
                 )
             )
 
