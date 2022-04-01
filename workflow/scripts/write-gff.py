@@ -4,6 +4,7 @@ import os
 from sys import stderr, stdout
 import argparse
 from typing import Tuple, List
+import warnings
 
 from Bio import SeqIO
 
@@ -167,6 +168,15 @@ if __name__ == "__main__":
         default="transcript1",
         required=False,
     )
+    parser.add_argument(
+        "--errors",
+        help="""
+            How to handle errors. 'warn' issues a warning, but tries to carry on. 'raise'
+            raises an error and stops.
+            """,
+        default="warn",
+        choices=("warn", "raise"),
+    )
     args = parser.parse_args()
 
     with open(args.fasta_in) as fobj:
@@ -183,14 +193,20 @@ if __name__ == "__main__":
         # _might_ not be correct...)
 
         if known_length[args.segment] != len(record):
-            raise ValueError(
-                """
+
+            msg = """
                 Length of FASTA ({}) differs from IRMA reference ({}) used to write splice
                 positions defined in GFF file.
                 """.format(
-                    len(record), known_length[args.segment]
-                )
+                len(record), known_length[args.segment]
             )
+
+            if args.errors == "warn":
+                warnings.warn(msg)
+            elif args.errors == "raise":
+                raise ValueError(msg)
+            else:
+                raise ValueError("'errors' should be 'warn' or 'raise'")
 
         path = os.path.join("workflow", "gff", "{}.gff".format(args.segment))
 

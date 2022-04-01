@@ -3,7 +3,7 @@ from snakemake.utils import validate, min_version
 min_version("7.0.4")
 
 configfile: "irma-config.json"
-validate(config, schema="schemas/config-schema.json")
+validate(config, schema="schemas/irma-config-schema.json")
 
 
 
@@ -61,13 +61,18 @@ rule write_gff:
     conda:
         "envs/tabix.yaml"
     log:
-        "logs/write_gff_{sample}_{pair}_{segment}.log"
+        "logs/write_gff/write_gff_{sample}_{pair}_{segment}.log"
     shell:
         """
         workflow/scripts/write-gff.py \
             --fasta-in {input} \
             --segment {wildcards.segment} \
-            --transcript_id {wildcards.segment} 2> {log} > {output.gff}
+            --transcript_id {wildcards.segment} 2> {log} > {output.gff} \
+            --errors {config[errors]}
+
+        # Append any warnings about length mismatches to IRMA reference in a log
+        grep 'Length of FASTA' {log} >> logs/irma-ref-length-mismatches.log
+        
         bgzip -c {output.gff} > {output.gffgz}
         tabix -p gff {output.gffgz}
         """

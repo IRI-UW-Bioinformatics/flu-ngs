@@ -127,8 +127,11 @@ HTML QC reports are saved in `results/qc-raw` and `results/qc-trimmed`.
 
 ## IRMA
 
-A config file `irma-config.json` is required to run IRMA. It could be identical
-to `qc-config.json`, but you could remove samples if any didn't pass QC.
+A config file `irma-config.json` is required to run IRMA. It needs to be pretty
+much identical to `qc-config.json`, but it must also contain an `"errors"` key
+which should be either `"warn"` or `"raise"`. If "`warn`" is used, the pipeline
+will issue warnings if something goes wrong, but attempt to carry on. If
+"`raise`" is used, then errors will stop the pipeline.
 
 If you had set `"pair": ["combined", "paired", "unpaired"]` to look at different
 the quality of different types of reads, you may want to now set `"pair":
@@ -149,6 +152,10 @@ When finished three summary files are generated:
   _segment_ gets its own sheet.
 - `results/xlsx/variants-mcc-flat-ordered.xlsx`. This contains all variants in
   one flat sheet.
+
+If you set `"errors"` to `"warn"`, then any consensus sequences that were the
+wrong length for constructing splice variants (which use GFF files), are put in
+`logs/irma-ref-length-mismatches.log`.
 
 ---
 

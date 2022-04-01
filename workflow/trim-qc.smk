@@ -3,7 +3,7 @@ from snakemake.utils import validate, min_version
 min_version("7.0.4")
 
 configfile: "qc-config.json"
-validate(config, schema="schemas/config-schema.json")
+validate(config, schema="schemas/qc-config-schema.json")
 
 rule all:
     input:
