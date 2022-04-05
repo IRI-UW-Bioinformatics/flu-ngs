@@ -56,10 +56,7 @@ rule write_gff:
     input:
         "results/irma/{sample}_{pair}/{segment}.fasta"
     output:
-        gff="results/irma/{sample}_{pair}/{segment}.gff",
-        gffgz="results/irma/{sample}_{pair}/{segment}.gff.gz"
-    conda:
-        "envs/tabix.yaml"
+        "results/irma/{sample}_{pair}/{segment}.gff"
     log:
         "logs/write_gff/write_gff_{sample}_{pair}_{segment}.log"
     shell:
@@ -68,13 +65,26 @@ rule write_gff:
             --fasta-in {input} \
             --segment {wildcards.segment} \
             --transcript_id {wildcards.segment} \
-            --errors {config[errors]} 2> {log} > {output.gff}
+            --errors {config[errors]} 2> {log} > {output}
 
         # Append any warnings about length mismatches to IRMA reference in a log
         grep 'Length of FASTA' {log} >> logs/irma-ref-length-mismatches.log 2> {log}
-        
-        bgzip -c {output.gff} > {output.gffgz} 2> {log}
-        tabix -p gff {output.gffgz} 2> {log}
+        """
+
+
+rule make_gffgz:
+    input:
+        "results/irma/{sample}_{pair}/{segment}.gff"
+    output:
+        "results/irma/{sample}_{pair}/{segment}.gff.gz"
+    log:
+        "logs/write_gffgz/write_gffgz_{sample}_{pair}_{segment}.log"
+    conda:
+        "envs/tabix.yaml"
+    shell:
+        """
+        bgzip -c {input} > {output} 2> {log}
+        tabix -p gff {output} 2> {log}
         """
 
 
