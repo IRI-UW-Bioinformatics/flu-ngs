@@ -36,7 +36,7 @@ checkpoint irma:
     output:
         directory("results/irma/{sample}_{pair}")
     log:
-        "logs/irma_{sample}_{pair}.log"
+        "logs/irma/irma_{sample}_{pair}.log"
     conda:
         "envs/irma.yaml"
     shell:

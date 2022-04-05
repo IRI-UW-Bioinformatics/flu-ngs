@@ -61,7 +61,7 @@ rule trim:
         "trimmed/{sample}/{sample}_2_paired.fastq",
         "trimmed/{sample}/{sample}_2_unpaired.fastq"
     log:
-        "logs/trimmomatic_{sample}.log"
+        "logs/trimmomatic/trimmomatic_{sample}.log"
     conda:
         "envs/trimmomatic.yaml"
     shell:
