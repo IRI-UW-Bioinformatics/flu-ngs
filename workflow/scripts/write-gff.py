@@ -197,9 +197,10 @@ if __name__ == "__main__":
         if known_length[args.segment] != len(record):
 
             msg = (
-                "Length of consensus found by IRMA ({}) differs from length of reference "
-                "({}) used to write splice positions defined in GFF file.",
-            ).format(len(record), known_length[args.segment])
+                "Length of consensus found by IRMA ({}) differs from length of "
+                "reference ({}) used to write splice positions defined in GFF "
+                "file.".format(len(record), known_length[args.segment])
+            )
 
             if args.errors == "warn":
                 warnings.warn(msg)
