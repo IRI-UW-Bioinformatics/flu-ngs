@@ -14,13 +14,10 @@ def findall(sub: str, string: str) -> List[int]:
     Return indexes of all substrings in a string
     """
     indexes = []
-    append = indexes.append
-    j = len(sub)
+    l = len(sub)
     for i in range(len(string)):
-        if string[i:j] == sub:
-            append(i)
-        i += 1
-        j += 1
+        if string[i : i + l] == sub:
+            indexes.append(i)
     return indexes
 
 
