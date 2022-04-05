@@ -6,3 +6,5 @@ raw
 trimmed
 logs
 **__pycache__
+qc-config.json
+irma-config.json
