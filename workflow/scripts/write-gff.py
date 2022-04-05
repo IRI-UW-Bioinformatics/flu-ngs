@@ -95,7 +95,9 @@ def splice_ns(seq: str, donor_loc: int, accept_loc: int) -> str:
 
     if (accept_loc - donor_loc) < 350:
         raise ValueError(
-            f"Splice acceptor signal location ({accept_loc}) should be at least 350 nts downstream of the donor signal ({donor_loc}) location, but it is {accept_loc - donor_loc}"
+            f"Splice acceptor signal location ({accept_loc}) should be at least 350 nts "
+            f"downstream of the donor signal ({donor_loc}) location, but it is "
+            f"{accept_loc - donor_loc}"
         )
 
     if seq[donor_loc : donor_loc + 4] != "AGGT":
@@ -194,12 +196,10 @@ if __name__ == "__main__":
 
         if known_length[args.segment] != len(record):
 
-            msg = """
-                Length of FASTA ({}) differs from IRMA reference ({}) used to write splice
-                positions defined in GFF file.
-                """.format(
-                len(record), known_length[args.segment]
-            )
+            msg = (
+                "Length of consensus found by IRMA ({}) differs from length of reference "
+                "({}) used to write splice positions defined in GFF file.",
+            ).format(len(record), known_length[args.segment])
 
             if args.errors == "warn":
                 warnings.warn(msg)
@@ -221,7 +221,8 @@ if __name__ == "__main__":
 
         donor_loc, accept_loc = find_ns_splice_sites(record.seq)
 
-        # NS1 and NS2 have 193 and 339 additional nts after splice acceptor (AG) respectively
+        # NS1 and NS2 have 193 and 339 additional nts after splice acceptor (AG)
+        # respectively
         ns1_end = accept_loc + 193
         ns2_end = accept_loc + 339
 
