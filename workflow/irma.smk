@@ -177,7 +177,7 @@ rule by_segment_summary:
             --out-segment {output.segment} \
             --out-flat {output.flat}
 
-        grep 'Length of FASTA' logs/write_gff/*.log > logs/length-mismatches.log
+        grep 'Length of consensus found by IRMA ' logs/write_gff/*.log > logs/incorrect-splice-vars.log
         """
 
 rule order_columns:

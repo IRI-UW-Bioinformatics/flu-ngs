@@ -185,8 +185,8 @@ If IRMA finds a consensus sequence for one of these segments that is not the
 expected length, then the behaviour is determined by the config file:
 
 - If `"errors": "warn"` is used, a logfile is produced at the end of the run
-(`logs/length-mismatches.log`) detailing any segments where the consensus was
-not the expected length. For these, it is highly likely that the variant
+(`logs/incorrect-splice-vars.log`) detailing any segments where the consensus
+was not the expected length. For these, it is highly likely that the variant
 analysis will be incorrect.
 - Instead, if `"errors": "raise"` is used in the config, the pipeline stops
 immediately if a length mismatch occurs.
