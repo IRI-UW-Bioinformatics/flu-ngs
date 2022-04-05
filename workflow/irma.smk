@@ -71,10 +71,10 @@ rule write_gff:
             --errors {config[errors]} 2> {log} > {output.gff}
 
         # Append any warnings about length mismatches to IRMA reference in a log
-        grep 'Length of FASTA' {log} >> logs/irma-ref-length-mismatches.log
+        grep 'Length of FASTA' {log} >> logs/irma-ref-length-mismatches.log 2> {log}
         
-        bgzip -c {output.gff} > {output.gffgz}
-        tabix -p gff {output.gffgz}
+        bgzip -c {output.gff} > {output.gffgz} 2> {log}
+        tabix -p gff {output.gffgz} 2> {log}
         """
 
 
