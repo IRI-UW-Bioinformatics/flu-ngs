@@ -66,9 +66,6 @@ rule write_gff:
             --segment {wildcards.segment} \
             --transcript_id {wildcards.segment} \
             --errors {config[errors]} 2> {log} > {output}
-
-        # Append any warnings about length mismatches to IRMA reference in a log
-        grep 'Length of FASTA' {log} >> logs/irma-ref-length-mismatches.log 2> {log}
         """
 
 
