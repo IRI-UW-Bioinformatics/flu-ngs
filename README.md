@@ -129,9 +129,27 @@ HTML QC reports are saved in `results/qc-raw` and `results/qc-trimmed`.
 
 A config file `irma-config.json` is required to run IRMA. It needs to be pretty
 much identical to `qc-config.json`, but it must also contain an `"errors"` key
-which should be either `"warn"` or `"raise"`. If "`warn`" is used, the pipeline
-will issue warnings if something goes wrong, but attempt to carry on. If
-"`raise`" is used, then errors will stop the pipeline.
+which should be either `"warn"` or `"raise"`, e.g.:
+
+```
+{
+  "samples": [
+    "YK_2832",
+    "YK_2833",
+    "YK_2834"
+  ],
+  "pair": [
+    "paired",
+    "unpaired"
+  ],
+  "errors": "warn"
+}
+```
+
+
+If "`warn`" is used, the pipeline will issue warnings if something goes wrong,
+but attempt to carry on. If "`raise`" is used, then errors will stop the
+pipeline.
 
 If you had set `"pair": ["combined", "paired", "unpaired"]` to look at different
 the quality of different types of reads, you may want to now set `"pair":
@@ -156,6 +174,25 @@ When finished three summary files are generated:
 If you set `"errors"` to `"warn"`, then any consensus sequences that were the
 wrong length for constructing splice variants (which use GFF files), are put in
 `logs/irma-ref-length-mismatches.log`.
+
+## Splice variants
+
+Analysis of splice variants of MP, PA and PB1 are all based on the assumption
+that IRMA finds canonical length consensus sequences for these segments (see
+[here](splice-variants.md) for more details). 
+
+If IRMA finds a consensus sequence for one of these segments that is not the
+expected length, then the behaviour is determined by the config file:
+
+- If `"errors": "warn"` is used, a logfile is produced at the end of the run
+(`logs/length-mismatches.log`) detailing any segments where the consensus was
+not the expected length. For these, it is highly likely that the variant
+analysis will be incorrect.
+- Instead, if `"errors": "raise"` is used in the config, the pipeline stops
+immediately if a length mismatch occurs.
+
+(For NS, we know to expect more variability in segment length, and the locations
+of exons are flexibly determined.)
 
 ---
 

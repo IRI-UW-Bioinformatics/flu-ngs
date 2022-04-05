@@ -176,6 +176,8 @@ rule by_segment_summary:
             --in-excel {input} \
             --out-segment {output.segment} \
             --out-flat {output.flat}
+
+        grep 'Length of FASTA' logs/write_gff/*.log > logs/length-mismatches.log
         """
 
 rule order_columns:
