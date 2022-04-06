@@ -180,7 +180,7 @@ When finished three summary files are generated:
 ### Sequences
 
 IRMA consensus sequences and amino acid translations are put in
-`results/seq/{sample}_{pair}`.
+`results/seq`.
 
 ### Splice variants
 
