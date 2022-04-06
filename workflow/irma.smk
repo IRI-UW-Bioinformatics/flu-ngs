@@ -11,7 +11,18 @@ rule all:
     input:
         "results/xlsx/variants-mcc-by-sample-ordered.xlsx",
         "results/xlsx/variants-mcc-by-segment-ordered.xlsx",
-        "results/xlsx/variants-mcc-flat-ordered.xlsx"
+        "results/xlsx/variants-mcc-flat-ordered.xlsx",
+        expand(
+            "results/seq/{sample}_{pair}/aa.fasta",
+            sample=config["samples"],
+            pair=config["pair"]
+        ),
+        expand(
+            "results/seq/{sample}_{pair}/nt.fasta",
+            sample=config["samples"],
+            pair=config["pair"]
+        )
+
 
 
 wildcard_constraints:
@@ -137,15 +148,80 @@ rule multiple_changes_in_codon:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
 
-def aggregate_segments(wildcards):
-    irma_out_dir = checkpoints.irma.get(**wildcards).output[0]
-    segments = [file[:-4] for file in os.listdir(irma_out_dir) if file.endswith(".vcf")]
-    return expand("results/variants-mcc/{sample}_{pair}/{segment}.tsv", segment=segments, **wildcards)
+def collect_segments(path):
+    """
+    A function that returns a function which make a list of files containing
+    segment names, based on segments that IRMA has found.
+
+    Args:
+        path (str): What file names should look like. It should contain
+            {segment} (which is expanded based on what segments IRMA finds), and can
+            contain {sample} and {pair} (which are expanded based on wildcards).
+    """
+
+    def fun(wildcards):
+        """
+        Make a list of files containing segment names, based on segments that IRMA has found.
+        """
+        irma_dir = checkpoints.irma.get(**wildcards).output[0]
+        segments = [
+            file[:-4]
+            for file in os.listdir(irma_dir)
+            if file.endswith(".vcf")
+        ]
+        return expand(path, segment=segments, **wildcards)
+
+    return fun
+
+
+rule concat_segment_aa:
+    input:
+        collect_segments("results/seq/{sample}_{pair}/separate/{segment}-aa.fasta")
+    output:
+        "results/seq/{sample}_{pair}/aa.fasta"
+    shell:
+        "cat {input} > {output}"
+
+
+rule concat_segment_nt:
+    input:
+        collect_segments("results/seq/{sample}_{pair}/separate/{segment}-nt.fasta")
+    output:
+        "results/seq/{sample}_{pair}/nt.fasta"
+    shell:
+        "cat {input} > {output}"
+
+
+rule transcribe:
+    input:
+        fasta="results/irma/{sample}_{pair}/{segment}.fasta",
+        gff="results/irma/{sample}_{pair}/{segment}.gff"
+    output:
+        "results/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
+    conda:
+        "envs/gffread.yaml"
+    log:
+        "logs/gffread/gffread_{sample}_{pair}_{segment}.log"
+    shell:
+        "gffread -w {output} -g {input.fasta} {input.gff} > {log} 2>&1"
+
+
+rule translate:
+    input:
+        "results/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
+    output:
+        "results/seq/{sample}_{pair}/separate/{segment}-aa.fasta"
+    conda:
+        "envs/emboss.yaml"
+    log:
+        "logs/transeq/transeq_{sample}_{pair}_{segment}.log"
+    shell:
+        "transeq -sequence {input} -outseq {output} > {log} 2>&1"
 
 
 rule concat_segements:
     input:
-        aggregate_segments
+        collect_segments("results/variants-mcc/{sample}_{pair}/{segment}.tsv")
     output:
         "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv"
     shell:
@@ -164,20 +240,27 @@ rule combine_samples:
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output}"
 
+
 rule by_segment_summary:
     input:
         "results/xlsx/variants-mcc-by-sample.xlsx"
     output:
         segment="results/xlsx/variants-mcc-by-segment.xlsx",
         flat="results/xlsx/variants-mcc-flat.xlsx"
+    log:
+        "logs/make-segment-summary.log"
     shell:
         """
         workflow/scripts/make-by-segment-summary.py \
             --in-excel {input} \
             --out-segment {output.segment} \
-            --out-flat {output.flat}
+            --out-flat {output.flat} > {log} 2>&1
 
+        # grep's exit status is 1 if it doesn't find any matches, causing snakemake to throw an error
+        # set +e, set -e prevents this
+        set +e
         grep 'Length of consensus found by IRMA ' logs/write_gff/*.log > logs/incorrect-splice-vars.log
+        set -e
         """
 
 rule order_columns:
