@@ -219,18 +219,10 @@ if __name__ == "__main__":
 
         donor_loc, accept_loc = find_ns_splice_sites(record.seq)
 
-        # NS1 and NS2 have 193 and 339 additional nts after splice acceptor (AG)
+        # NS1 and NS2 have 193 and 337 additional nts after splice acceptor (AG)
         # respectively
         ns1_end = accept_loc + 193
-        ns2_end = accept_loc + 339
-
-        # Write NS1 and NS2 sequences
-        ns2_seq = splice_ns(record.seq, donor_loc=donor_loc, accept_loc=accept_loc)
-        with open(args.fasta_in.replace(".fasta", ".gff.fasta"), "w") as fobj:
-            fobj.write(">A_NS1\n")
-            fobj.write(str(record.seq)[:ns1_end] + "\n")
-            fobj.write(">A_NS2\n")
-            fobj.write(str(ns2_seq))
+        ns2_end = accept_loc + 337
 
         # donor_loc corresponds to start of AGGT signal. 'GT' is trimmed, leaving 'AG'.
         # So, the position of the first G is the end of the first exon.
