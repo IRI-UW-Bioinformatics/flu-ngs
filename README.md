@@ -151,8 +151,8 @@ which should be either `"warn"` or `"raise"`, e.g.:
 ```
 
 
-If "`warn`" is used, the pipeline will issue warnings if something goes wrong,
-but attempt to carry on. If "`raise`" is used, then errors will stop the
+If `"warn"` is used, the pipeline will issue warnings if something goes wrong,
+but attempt to carry on. If `"raise"` is used, then errors will stop the
 pipeline.
 
 If you had set `"pair": ["combined", "paired", "unpaired"]` to look at different
@@ -166,6 +166,8 @@ Run the IRMA step using:
 snakemake --snakefile workflow/irma.smk --cores all
 ```
 
+### Variant summary reports
+
 When finished three summary files are generated:
 
 - `results/xlsx/variants-mcc-by-sample-ordered.xlsx`. Each _sample_ has its own
@@ -175,14 +177,15 @@ When finished three summary files are generated:
 - `results/xlsx/variants-mcc-flat-ordered.xlsx`. This contains all variants in
   one flat sheet.
 
-If you set `"errors"` to `"warn"`, then any consensus sequences that were the
-wrong length for constructing splice variants (which use GFF files), are put in
-`logs/irma-ref-length-mismatches.log`.
+### Sequences
 
-## Splice variants
+IRMA consensus sequences and amino acid translations are put in
+`results/seq/{sample}_{pair}`.
 
-Analysis of splice variants of MP, PA and PB1 are all based on the assumption
-that IRMA finds canonical length consensus sequences for these segments (see
+### Splice variants
+
+Splice variants of MP, PA and PB1 are all based on the assumption that IRMA
+finds canonical length consensus sequences for these segments (see
 [here](splice-variants.md) for more details). 
 
 If IRMA finds a consensus sequence for one of these segments that is not the
