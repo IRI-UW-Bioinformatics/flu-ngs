@@ -1,7 +1,7 @@
-A_PA	flu-ngs	gene	1	2151	.	+	.	ID=gene1
-A_PA	flu-ngs	transcript	1	2151	.	+	.	ID=A_PA;Parent=gene1;biotype=protein_coding
-A_PA	flu-ngs	exon	1	2151	.	+	.	ID=exon1;Parent=A_PA
-A_PA	flu-ngs	CDS	1	2151	.	+	0	ID=cds1;Parent=A_PA
+A_PA	flu-ngs	gene	1	{end}	.	+	.	ID=gene1
+A_PA	flu-ngs	transcript	1	{end}	.	+	.	ID=A_PA;Parent=gene1;biotype=protein_coding
+A_PA	flu-ngs	exon	1	{end}	.	+	.	ID=exon1;Parent=A_PA
+A_PA	flu-ngs	CDS	1	{end}	.	+	0	ID=cds1;Parent=A_PA
 A_PA	flu-ngs	transcript	1	760	.	+	.	ID=A_PA-X;Parent=gene1;biotype=protein_coding
 A_PA	flu-ngs	exon	1	570	.	+	.	ID=exon2;Parent=A_PA-X
 A_PA	flu-ngs	CDS	1	570	.	+	0	ID=cds2;Parent=A_PA-X

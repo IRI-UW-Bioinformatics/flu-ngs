@@ -1,9 +1,9 @@
-A_MP	flu-ngs	gene	1	982	.	+	.	ID=gene1
+A_MP	flu-ngs	gene	1	{end}	.	+	.	ID=gene1
 A_MP	flu-ngs	transcript	1	819	.	+	.	ID=A_M1;Parent=gene1;biotype=protein_coding
 A_MP	flu-ngs	exon	1	819	.	+	.	ID=exon1_1;Parent=A_M1
 A_MP	flu-ngs	CDS	1	819	.	+	0	ID=cds1;Parent=A_M1
-A_MP	flu-ngs	transcript	1	982	.	+	.	ID=A_M2;Parent=gene1;biotype=protein_coding
+A_MP	flu-ngs	transcript	1	{end}	.	+	.	ID=A_M2;Parent=gene1;biotype=protein_coding
 A_MP	flu-ngs	exon	1	26	.	+	.	ID=exon2;Parent=A_M2
 A_MP	flu-ngs	CDS	1	26	.	+	0	ID=cds2;Parent=A_M2
-A_MP	flu-ngs	exon	715	982	.	+	.	ID=exon3;Parent=A_M2
-A_MP	flu-ngs	CDS	715	982	.	+	0	ID=cds3;Parent=A_M2
+A_MP	flu-ngs	exon	715	{end}	.	+	.	ID=exon3;Parent=A_M2
+A_MP	flu-ngs	CDS	715	{end}	.	+	0	ID=cds3;Parent=A_M2

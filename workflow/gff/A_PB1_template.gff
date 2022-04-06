@@ -1,0 +1,7 @@
+A_PB1	flu-ngs	gene	1	{end}	.	+	.	ID=gene1
+A_PB1	flu-ngs	transcript	1	{end}	.	+	.	ID=A_PB1;Parent=gene1;biotype=protein_coding
+A_PB1	flu-ngs	exon	1	{end}	.	+	.	ID=exon1;Parent=A_PB1
+A_PB1	flu-ngs	CDS	1	{end}	.	+	0	ID=cds1;Parent=A_PB1
+A_PB1	flu-ngs	transcript	95	367	.	+	.	ID=A_PB1-F2;Parent=gene1;biotype=protein_coding
+A_PB1	flu-ngs	exon	95	367	.	+	.	ID=exon2;Parent=A_PB1-F2
+A_PB1	flu-ngs	CDS	95	367	.	+	0	ID=cds2;Parent=A_PB1-F2
