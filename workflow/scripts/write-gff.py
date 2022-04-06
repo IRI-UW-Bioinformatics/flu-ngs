@@ -243,7 +243,7 @@ if __name__ == "__main__":
         )
 
     else:
-        path = os.path.join("workflow", "gff", "generic_template.txt")
+        path = os.path.join("workflow", "gff", "generic_template.gff")
 
         with open(path) as fobj:
             template = fobj.read()
