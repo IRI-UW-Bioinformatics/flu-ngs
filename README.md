@@ -30,6 +30,10 @@ These workflows call various other bioinformatics programs:
 - [tabix](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3042176/) is required to
   preprocess files for VEP.
 - bgzip & gunzip are used for (de)compression.
+- [gffread](http://ccb.jhu.edu/software/stringtie/gff.shtml) is used to write
+  transcripts from fasta and GFF files.
+- [transeq](https://www.ebi.ac.uk/Tools/emboss/), is used to translate
+  transcripts.
 
 Versions are listed in `workflow/envs/*.yaml`.
 
