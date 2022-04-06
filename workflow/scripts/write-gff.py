@@ -206,10 +206,12 @@ if __name__ == "__main__":
             else:
                 raise ValueError("'errors' should be 'warn' or 'raise'")
 
-        path = os.path.join("workflow", "gff", "{}.gff".format(args.segment))
+        path = os.path.join("workflow", "gff", "{}_template.gff".format(args.segment))
 
         with open(path) as fobj:
-            gff = fobj.read()
+            template = fobj.read()
+
+        gff = template.format(end=len(record))
 
     elif args.segment == "A_NS":
         path = os.path.join("workflow", "gff", "A_NS_template.txt")
