@@ -214,7 +214,7 @@ if __name__ == "__main__":
         gff = template.format(end=len(record))
 
     elif args.segment == "A_NS":
-        path = os.path.join("workflow", "gff", "A_NS_template.txt")
+        path = os.path.join("workflow", "gff", "A_NS_template.gff")
 
         with open(path) as fobj:
             template = fobj.read()
