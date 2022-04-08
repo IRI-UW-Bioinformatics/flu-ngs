@@ -45,29 +45,29 @@ checkpoint irma:
         "trimmed/{sample}/{sample}_1_{pair}.fastq",
         "trimmed/{sample}/{sample}_2_{pair}.fastq",
     output:
-        directory("results/irma/{sample}_{pair}")
+        directory("results/irma/{sample}_{pair}/secondary_assembly")
     log:
         "logs/irma/irma_{sample}_{pair}.log"
     conda:
         "envs/irma.yaml"
     shell:
-        "IRMA FLU {input} {output} > {log}"
+        "IRMA FLU-secondary-iri {input} {output} > {log}"
 
 
 rule trim_trailing_tabs:
     input:
-        "results/irma/{sample}_{pair}/tables/{table}.txt"
+        "results/irma/{sample}_{pair}/secondary_assembly/tables/{table}.txt"
     output:
-        "results/irma/{sample}_{pair}/tables/{table}.tsv"
+        "results/irma/{sample}_{pair}/secondary_assembly/tables/{table}.tsv"
     shell:
         "sed 's/\t$//g' < {input} > {output}"
 
 
 rule write_gff:
     input:
-        "results/irma/{sample}_{pair}/{segment}.fasta"
+        "results/irma/{sample}_{pair}/secondary_assembly/{segment}.fasta"
     output:
-        "results/irma/{sample}_{pair}/{segment}.gff"
+        "results/irma/{sample}_{pair}/secondary_assembly/{segment}.gff"
     log:
         "logs/write_gff/write_gff_{sample}_{pair}_{segment}.log"
     shell:
@@ -82,9 +82,9 @@ rule write_gff:
 
 rule make_gffgz:
     input:
-        "results/irma/{sample}_{pair}/{segment}.gff"
+        "results/irma/{sample}_{pair}/secondary_assembly/{segment}.gff"
     output:
-        "results/irma/{sample}_{pair}/{segment}.gff.gz"
+        "results/irma/{sample}_{pair}/secondary_assembly/{segment}.gff.gz"
     log:
         "logs/write_gffgz/write_gffgz_{sample}_{pair}_{segment}.log"
     conda:
@@ -98,9 +98,9 @@ rule make_gffgz:
 
 rule summarise_variants:
     input:
-        vcf="results/irma/{sample}_{pair}/{segment}.vcf",
-        fas="results/irma/{sample}_{pair}/{segment}.fasta",
-        gff="results/irma/{sample}_{pair}/{segment}.gff.gz"
+        vcf="results/irma/{sample}_{pair}/secondary_assembly/{segment}.vcf",
+        fas="results/irma/{sample}_{pair}/secondary_assembly/{segment}.fasta",
+        gff="results/irma/{sample}_{pair}/secondary_assembly/{segment}.gff.gz"
     output:
         "results/vep/{sample}_{pair}/{segment}.tsv"
     conda:
@@ -124,9 +124,9 @@ rule summarise_variants:
 rule merge_irma_vep:
     input:
         vep="results/vep/{sample}_{pair}/{segment}.tsv",
-        irma_var="results/irma/{sample}_{pair}/tables/{segment}-variants.tsv",
-        irma_ins="results/irma/{sample}_{pair}/tables/{segment}-insertions.tsv",
-        irma_del="results/irma/{sample}_{pair}/tables/{segment}-deletions.tsv"
+        irma_var="results/irma/{sample}_{pair}/secondary_assembly/tables/{segment}-variants.tsv",
+        irma_ins="results/irma/{sample}_{pair}/secondary_assembly/tables/{segment}-insertions.tsv",
+        irma_del="results/irma/{sample}_{pair}/secondary_assembly/tables/{segment}-deletions.tsv"
     output:
         "results/variants/{sample}_{pair}/{segment}.tsv"
     shell:
@@ -136,7 +136,7 @@ rule merge_irma_vep:
             --irma-var {input.irma_var} \
             --irma-del {input.irma_del} \
             --irma-ins {input.irma_ins} \
-            --fasta-consensus results/irma/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
+            --fasta-consensus results/irma/{wildcards.sample}_{wildcards.pair}/secondary_assembly/{wildcards.segment}.fasta > {output}
         """
 
 rule multiple_changes_in_codon:
@@ -194,8 +194,8 @@ rule concat_segment_nt:
 
 rule transcribe:
     input:
-        fasta="results/irma/{sample}_{pair}/{segment}.fasta",
-        gff="results/irma/{sample}_{pair}/{segment}.gff"
+        fasta="results/irma/{sample}_{pair}/secondary_assembly/{segment}.fasta",
+        gff="results/irma/{sample}_{pair}/secondary_assembly/{segment}.gff"
     output:
         "results/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
     conda:
