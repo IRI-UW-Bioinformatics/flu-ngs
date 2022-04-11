@@ -51,7 +51,7 @@ checkpoint irma:
     conda:
         "envs/irma.yaml"
     shell:
-        "IRMA FLU-secondary-iri {input} {output} > {log}"
+        "IRMA FLU-secondary {input} {output} > {log}"
 
 
 rule trim_trailing_tabs:
