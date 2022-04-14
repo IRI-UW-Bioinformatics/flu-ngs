@@ -39,21 +39,21 @@ rule combine_paired_unpaired:
         "cat {input} > {output}"
 
 
-rule irma:
+rule irma_raw:
     input:
         "trimmed/{sample}/{sample}_1_{pair}.fastq",
         "trimmed/{sample}/{sample}_2_{pair}.fastq",
     output:
-        directory("results/irma/{sample}_{pair}")
+        directory("results/irma-raw/{sample}_{pair}")
     log:
-        "logs/irma/irma_{sample}_{pair}.log"
+        "logs/irma-raw/{sample}_{pair}.log"
     conda:
         "envs/irma.yaml"
     shell:
         "IRMA FLU-secondary-iri {input} {output} > {log}"
 
 
-checkpoint irma_secondary:
+checkpoint irma:
     """
     IRMA puts output from secondary assemblies in a directory called:
 
@@ -71,21 +71,21 @@ checkpoint irma_secondary:
     results directory so that it is easy to point to for other rules.
     """
     input:
-        "results/irma/{sample}_{pair}"
+        "results/irma-raw/{sample}_{pair}"
     output:
-        directory("results/irma-secondary/{sample}_{pair}")
+        directory("results/irma/{sample}_{pair}")
     log:
-        "logs/irma-secondary/{sample}_{pair}.log"
+        "logs/irma/{sample}_{pair}.log"
     shell:
         """
         # Find the most nested secondary_assembly dir
-        DIR="$(find results/irma/{wildcards.sample}_{wildcards.pair} -name secondary_assembly | sort | tail -n 1)" > {log}
+        DIR="$(find results/irma-raw/{wildcards.sample}_{wildcards.pair} -name secondary_assembly | sort | tail -n 1)" > {log}
         
-        # Some samples may not trigger secondary_assembly, so, if $DIR is empty, set to the standard IRMA output
-        [ -z "$DIR" ] && DIR=results/irma/{wildcards.sample}_{wildcards.pair} >> {log}
+        # Some samples may not trigger secondary_assembly, so, if $DIR variable is empty, set to the standard IRMA output
+        [ -z "$DIR" ] && DIR=results/irma-raw/{wildcards.sample}_{wildcards.pair} >> {log}
         
         # Make directory if necessary
-        [ ! -d results/irma-secondary ] && mkdir results/irma-secondary >> {log}
+        [ ! -d results/irma ] && mkdir results/irma >> {log}
         
         # Finally, make the link
         ln -s "../${{DIR#results/}}" {output} >> {log}
@@ -98,18 +98,18 @@ rule trim_trailing_tabs:
     pandas.
     """
     input:
-        "results/irma-secondary/{sample}_{pair}/tables/{table}.txt"
+        "results/irma/{sample}_{pair}/tables/{table}.txt"
     output:
-        "results/irma-secondary/{sample}_{pair}/tables/{table}.tsv"
+        "results/irma/{sample}_{pair}/tables/{table}.tsv"
     shell:
         "sed 's/\t$//g' < {input} > {output}"
 
 
 rule write_gff:
     input:
-        "results/irma-secondary/{sample}_{pair}/{segment}.fasta"
+        "results/irma/{sample}_{pair}/{segment}.fasta"
     output:
-        "results/irma-secondary/{sample}_{pair}/{segment}.gff"
+        "results/irma/{sample}_{pair}/{segment}.gff"
     log:
         "logs/write_gff/write_gff_{sample}_{pair}_{segment}.log"
     shell:
@@ -124,9 +124,9 @@ rule write_gff:
 
 rule make_gffgz:
     input:
-        "results/irma-secondary/{sample}_{pair}/{segment}.gff"
+        "results/irma/{sample}_{pair}/{segment}.gff"
     output:
-        "results/irma-secondary/{sample}_{pair}/{segment}.gff.gz"
+        "results/irma/{sample}_{pair}/{segment}.gff.gz"
     log:
         "logs/write_gffgz/write_gffgz_{sample}_{pair}_{segment}.log"
     conda:
@@ -140,9 +140,9 @@ rule make_gffgz:
 
 rule summarise_variants:
     input:
-        vcf="results/irma-secondary/{sample}_{pair}/{segment}.vcf",
-        fas="results/irma-secondary/{sample}_{pair}/{segment}.fasta",
-        gff="results/irma-secondary/{sample}_{pair}/{segment}.gff.gz"
+        vcf="results/irma/{sample}_{pair}/{segment}.vcf",
+        fas="results/irma/{sample}_{pair}/{segment}.fasta",
+        gff="results/irma/{sample}_{pair}/{segment}.gff.gz"
     output:
         "results/vep/{sample}_{pair}/{segment}.tsv"
     conda:
@@ -166,9 +166,9 @@ rule summarise_variants:
 rule merge_irma_vep:
     input:
         vep="results/vep/{sample}_{pair}/{segment}.tsv",
-        irma_var="results/irma-secondary/{sample}_{pair}/tables/{segment}-variants.tsv",
-        irma_ins="results/irma-secondary/{sample}_{pair}/tables/{segment}-insertions.tsv",
-        irma_del="results/irma-secondary/{sample}_{pair}/tables/{segment}-deletions.tsv"
+        irma_var="results/irma/{sample}_{pair}/tables/{segment}-variants.tsv",
+        irma_ins="results/irma/{sample}_{pair}/tables/{segment}-insertions.tsv",
+        irma_del="results/irma/{sample}_{pair}/tables/{segment}-deletions.tsv"
     output:
         "results/variants/{sample}_{pair}/{segment}.tsv"
     shell:
@@ -178,7 +178,7 @@ rule merge_irma_vep:
             --irma-var {input.irma_var} \
             --irma-del {input.irma_del} \
             --irma-ins {input.irma_ins} \
-            --fasta-consensus results/irma-secondary/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
+            --fasta-consensus results/irma/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
         """
 
 rule multiple_changes_in_codon:
@@ -205,7 +205,7 @@ def collect_segments(path):
         """
         Make a list of files containing segment names, based on segments that IRMA has found.
         """
-        irma_dir = checkpoints.irma_secondary.get(**wildcards).output[0]
+        irma_dir = checkpoints.irma.get(**wildcards).output[0]
         segments = [
             file[:-4]
             for file in os.listdir(irma_dir)
@@ -236,8 +236,8 @@ rule concat_segment_nt:
 
 rule transcribe:
     input:
-        fasta="results/irma-secondary/{sample}_{pair}/{segment}.fasta",
-        gff="results/irma-secondary/{sample}_{pair}/{segment}.gff"
+        fasta="results/irma/{sample}_{pair}/{segment}.fasta",
+        gff="results/irma/{sample}_{pair}/{segment}.gff"
     output:
         "results/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
     conda:
