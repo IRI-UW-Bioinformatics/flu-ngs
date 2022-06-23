@@ -151,9 +151,9 @@ if __name__ == "__main__":
 
             Alternatively, pass either A_MP, A_PA or A_PB1 to the --segment keyword
             argument to write a predefined GFF file. If one of these segments is passed to
-            this flag then the predefined GFF file is written, and the --fasta argument is
-            ignored for the purpose of writing the GFF file. The --fasta file is still
-            required to check that the sequence is the correct length for the predefined
+            this flag then the predefined GFF file is written, and the --fasta-in argument
+            is ignored for the purpose of writing the GFF file. The --fasta-in file is
+            still used to check that the sequence is the correct length for the predefined
             GFF file.
             """,
     )
