@@ -80,13 +80,13 @@ checkpoint irma:
         """
         # Find the most nested secondary_assembly dir
         DIR="$(find results/irma-raw/{wildcards.sample}_{wildcards.pair} -name secondary_assembly | sort | tail -n 1)" > {log}
-        
+
         # Some samples may not trigger secondary_assembly, so, if $DIR variable is empty, set to the standard IRMA output
         [ -z "$DIR" ] && DIR=results/irma-raw/{wildcards.sample}_{wildcards.pair} >> {log}
-        
+
         # Make directory if necessary
         [ ! -d results/irma ] && mkdir results/irma >> {log}
-        
+
         # Finally, make the link
         ln -s "../${{DIR#results/}}" {output} >> {log}
         """
