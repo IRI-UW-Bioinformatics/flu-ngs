@@ -19,11 +19,20 @@
     },
     "errors": {
       "type": "string"
+    },
+    "order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
     }
   },
   "required": [
     "samples",
     "pair",
-    "errors"
+    "errors",
+    "order"
   ]
 }

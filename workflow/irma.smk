@@ -8,25 +8,37 @@ validate(config, schema="schemas/irma-config-schema.json")
 
 rule all:
     input:
-        "results/xlsx/variants-mcc-by-sample-ordered.xlsx",
-        "results/xlsx/variants-mcc-by-segment-ordered.xlsx",
-        "results/xlsx/variants-mcc-flat-ordered.xlsx",
         expand(
-            "results/seq/{sample}_{pair}/aa.fasta",
-            sample=config["samples"],
-            pair=config["pair"]
+            "results/{order}/xlsx/variants-mcc-by-sample-ordered.xlsx",
+            order=config["order"]
         ),
         expand(
-            "results/seq/{sample}_{pair}/nt.fasta",
+            "results/{order}/xlsx/variants-mcc-by-segment-ordered.xlsx",
+            order=config["order"]
+        ),
+        expand(
+            "results/{order}/xlsx/variants-mcc-flat-ordered.xlsx",
+            order=config["order"]
+        ),
+        expand(
+            "results/{order}/seq/{sample}_{pair}/aa.fasta",
             sample=config["samples"],
-            pair=config["pair"]
+            pair=config["pair"],
+            order=config["order"]
+        ),
+        expand(
+            "results/{order}/seq/{sample}_{pair}/nt.fasta",
+            sample=config["samples"],
+            pair=config["pair"],
+            order=config["order"]
         )
 
 
 
 wildcard_constraints:
     n="1|2",
-    pair="(paired)|(combined)"    
+    pair="(paired)|(combined)",
+    order="(primary)|(secondary)"
 
 
 rule combine_paired_unpaired:
@@ -44,16 +56,16 @@ rule irma_raw:
         "trimmed/{sample}/{sample}_1_{pair}.fastq",
         "trimmed/{sample}/{sample}_2_{pair}.fastq",
     output:
-        directory("results/irma-raw/{sample}_{pair}")
+        directory("results/{order}/irma-raw/{sample}_{pair}")
     log:
-        "logs/irma-raw/{sample}_{pair}.log"
+        "logs/irma-{order}-raw/{sample}_{pair}.log"
     conda:
         "envs/irma.yaml"
     shell:
-        "IRMA FLU-secondary-iri {input} {output} > {log}"
+        "IRMA FLU-{wildcards.order}-iri {input} {output} > {log}"
 
 
-checkpoint irma:
+checkpoint find_irma_output:
     """
     IRMA puts output from secondary assemblies in a directory called:
 
@@ -71,24 +83,24 @@ checkpoint irma:
     results directory so that it is easy to point to for other rules.
     """
     input:
-        "results/irma-raw/{sample}_{pair}"
+        "results/{order}/irma-raw/{sample}_{pair}"
     output:
-        directory("results/irma/{sample}_{pair}")
+        directory("results/{order}/irma/{sample}_{pair}")
     log:
-        "logs/irma/{sample}_{pair}.log"
+        "logs/irma-{order}/{sample}_{pair}.log"
     shell:
         """
         # Find the most nested secondary_assembly dir
-        DIR="$(find results/irma-raw/{wildcards.sample}_{wildcards.pair} -name secondary_assembly | sort | tail -n 1)" > {log}
+        DIR="$(find results/{wildcards.order}/irma-raw/{wildcards.sample}_{wildcards.pair} -name secondary_assembly | sort | tail -n 1)" > {log}
 
         # Some samples may not trigger secondary_assembly, so, if $DIR variable is empty, set to the standard IRMA output
-        [ -z "$DIR" ] && DIR=results/irma-raw/{wildcards.sample}_{wildcards.pair} >> {log}
+        [ -z "$DIR" ] && DIR=results/{wildcards.order}/irma-raw/{wildcards.sample}_{wildcards.pair} >> {log}
 
         # Make directory if necessary
-        [ ! -d results/irma ] && mkdir results/irma >> {log}
+        [ ! -d results/{wildcards.order}/irma ] && mkdir results/{wildcards.order}/irma >> {log}
 
         # Finally, make the link
-        ln -s "../${{DIR#results/}}" {output} >> {log}
+        ln -s "../irma-raw/{wildcards.sample}_{wildcards.pair}" {output} >> {log}
         """
 
 
@@ -98,20 +110,20 @@ rule trim_trailing_tabs:
     pandas.
     """
     input:
-        "results/irma/{sample}_{pair}/tables/{table}.txt"
+        "results/{order}/irma/{sample}_{pair}/tables/{table}.txt"
     output:
-        "results/irma/{sample}_{pair}/tables/{table}.tsv"
+        "results/{order}/irma/{sample}_{pair}/tables/{table}.tsv"
     shell:
         "sed 's/\t$//g' < {input} > {output}"
 
 
 rule write_gff:
     input:
-        "results/irma/{sample}_{pair}/{segment}.fasta"
+        "results/{order}/irma/{sample}_{pair}/{segment}.fasta"
     output:
-        "results/irma/{sample}_{pair}/{segment}.gff"
+        "results/{order}/irma/{sample}_{pair}/{segment}.gff"
     log:
-        "logs/write_gff/write_gff_{sample}_{pair}_{segment}.log"
+        "logs/write_gff/write_gff_{sample}_{pair}_{segment}_{order}.log"
     shell:
         """
         workflow/scripts/write-gff.py \
@@ -124,11 +136,11 @@ rule write_gff:
 
 rule make_gffgz:
     input:
-        "results/irma/{sample}_{pair}/{segment}.gff"
+        "results/{order}/irma/{sample}_{pair}/{segment}.gff"
     output:
-        "results/irma/{sample}_{pair}/{segment}.gff.gz"
+        "results/{order}/irma/{sample}_{pair}/{segment}.gff.gz"
     log:
-        "logs/write_gffgz/write_gffgz_{sample}_{pair}_{segment}.log"
+        "logs/write_gffgz/write_gffgz_{sample}_{pair}_{segment}_{order}.log"
     conda:
         "envs/tabix.yaml"
     shell:
@@ -140,11 +152,11 @@ rule make_gffgz:
 
 rule summarise_variants:
     input:
-        vcf="results/irma/{sample}_{pair}/{segment}.vcf",
-        fas="results/irma/{sample}_{pair}/{segment}.fasta",
-        gff="results/irma/{sample}_{pair}/{segment}.gff.gz"
+        vcf="results/{order}/irma/{sample}_{pair}/{segment}.vcf",
+        fas="results/{order}/irma/{sample}_{pair}/{segment}.fasta",
+        gff="results/{order}/irma/{sample}_{pair}/{segment}.gff.gz"
     output:
-        "results/vep/{sample}_{pair}/{segment}.tsv"
+        "results/{order}/vep/{sample}_{pair}/{segment}.tsv"
     conda:
         "envs/vep.yaml"
     shell:
@@ -165,12 +177,12 @@ rule summarise_variants:
 
 rule merge_irma_vep:
     input:
-        vep="results/vep/{sample}_{pair}/{segment}.tsv",
-        irma_var="results/irma/{sample}_{pair}/tables/{segment}-variants.tsv",
-        irma_ins="results/irma/{sample}_{pair}/tables/{segment}-insertions.tsv",
-        irma_del="results/irma/{sample}_{pair}/tables/{segment}-deletions.tsv"
+        vep="results/{order}/vep/{sample}_{pair}/{segment}.tsv",
+        irma_var="results/{order}/irma/{sample}_{pair}/tables/{segment}-variants.tsv",
+        irma_ins="results/{order}/irma/{sample}_{pair}/tables/{segment}-insertions.tsv",
+        irma_del="results/{order}/irma/{sample}_{pair}/tables/{segment}-deletions.tsv"
     output:
-        "results/variants/{sample}_{pair}/{segment}.tsv"
+        "results/{order}/variants/{sample}_{pair}/{segment}.tsv"
     shell:
         """
         workflow/scripts/merge-vep-irma.py \
@@ -178,14 +190,14 @@ rule merge_irma_vep:
             --irma-var {input.irma_var} \
             --irma-del {input.irma_del} \
             --irma-ins {input.irma_ins} \
-            --fasta-consensus results/irma/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
+            --fasta-consensus results/{wildcards.order}/irma/{wildcards.sample}_{wildcards.pair}/{wildcards.segment}.fasta > {output}
         """
 
 rule multiple_changes_in_codon:
     input:
-        "results/variants/{sample}_{pair}/{segment}.tsv"
+        "results/{order}/variants/{sample}_{pair}/{segment}.tsv"
     output:
-        "results/variants-mcc/{sample}_{pair}/{segment}.tsv"
+        "results/{order}/variants-mcc/{sample}_{pair}/{segment}.tsv"
     shell:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
@@ -205,7 +217,7 @@ def collect_segments(path):
         """
         Make a list of files containing segment names, based on segments that IRMA has found.
         """
-        irma_dir = checkpoints.irma.get(**wildcards).output[0]
+        irma_dir = checkpoints.find_irma_output.get(**wildcards).output[0]
         segments = [
             file[:-4]
             for file in os.listdir(irma_dir)
@@ -218,54 +230,54 @@ def collect_segments(path):
 
 rule concat_segment_aa:
     input:
-        collect_segments("results/seq/{sample}_{pair}/separate/{segment}-aa.fasta")
+        collect_segments("results/{order}/seq/{sample}_{pair}/separate/{segment}-aa.fasta")
     output:
-        "results/seq/{sample}_{pair}/aa.fasta"
+        "results/{order}/seq/{sample}_{pair}/aa.fasta"
     shell:
         "cat {input} > {output}"
 
 
 rule concat_segment_nt:
     input:
-        collect_segments("results/seq/{sample}_{pair}/separate/{segment}-nt.fasta")
+        collect_segments("results/{order}/seq/{sample}_{pair}/separate/{segment}-nt.fasta")
     output:
-        "results/seq/{sample}_{pair}/nt.fasta"
+        "results/{order}/seq/{sample}_{pair}/nt.fasta"
     shell:
         "cat {input} > {output}"
 
 
 rule transcribe:
     input:
-        fasta="results/irma/{sample}_{pair}/{segment}.fasta",
-        gff="results/irma/{sample}_{pair}/{segment}.gff"
+        fasta="results/{order}/irma/{sample}_{pair}/{segment}.fasta",
+        gff="results/{order}/irma/{sample}_{pair}/{segment}.gff"
     output:
-        "results/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
+        "results/{order}/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
     conda:
         "envs/gffread.yaml"
     log:
-        "logs/gffread/gffread_{sample}_{pair}_{segment}.log"
+        "logs/gffread/gffread_{sample}_{pair}_{segment}_{order}.log"
     shell:
         "gffread -w {output} -g {input.fasta} {input.gff} > {log} 2>&1"
 
 
 rule translate:
     input:
-        "results/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
+        "results/{order}/seq/{sample}_{pair}/separate/{segment}-nt.fasta"
     output:
-        "results/seq/{sample}_{pair}/separate/{segment}-aa.fasta"
+        "results/{order}/seq/{sample}_{pair}/separate/{segment}-aa.fasta"
     conda:
         "envs/emboss.yaml"
     log:
-        "logs/transeq/transeq_{sample}_{pair}_{segment}.log"
+        "logs/transeq/transeq_{sample}_{pair}_{segment}_{order}.log"
     shell:
         "transeq -sequence {input} -outseq {output} > {log} 2>&1"
 
 
 rule concat_segements:
     input:
-        collect_segments("results/variants-mcc/{sample}_{pair}/{segment}.tsv")
+        collect_segments("results/{order}/variants-mcc/{sample}_{pair}/{segment}.tsv")
     output:
-        "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv"
+        "results/{order}/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv"
     shell:
         "workflow/scripts/concat-tables.py {input} > {output}"
 
@@ -273,24 +285,24 @@ rule concat_segements:
 rule combine_samples:
     input:
         expand(
-            "results/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv",
+            "results/{{order}}/variants-mcc/{sample}_{pair}/{sample}_{pair}.tsv",
             sample=config["samples"],
-            pair=config["pair"]
+            pair=config["pair"],
         )
     output:
-        "results/xlsx/variants-mcc-by-sample.xlsx"
+        "results/{order}/xlsx/variants-mcc-by-sample.xlsx"
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output}"
 
 
 rule by_segment_summary:
     input:
-        "results/xlsx/variants-mcc-by-sample.xlsx"
+        "results/{order}/xlsx/variants-mcc-by-sample.xlsx"
     output:
-        segment="results/xlsx/variants-mcc-by-segment.xlsx",
-        flat="results/xlsx/variants-mcc-flat.xlsx"
+        segment="results/{order}/xlsx/variants-mcc-by-segment.xlsx",
+        flat="results/{order}/xlsx/variants-mcc-flat.xlsx"
     log:
-        "logs/make-segment-summary.log"
+        "logs/make-segment-summary-{order}.log"
     shell:
         """
         workflow/scripts/make-by-segment-summary.py \
@@ -301,7 +313,7 @@ rule by_segment_summary:
         # grep's exit status is 1 if it doesn't find any matches, causing snakemake to throw an error
         # set +e, set -e prevents this
         set +e
-        grep 'Length of consensus found by IRMA ' logs/write_gff/*.log > logs/incorrect-splice-vars.log
+        grep 'Length of consensus found by IRMA ' logs/write_gff/*.log > logs/incorrect-splice-vars-{wildcards.order}.log
         set -e
         """
 

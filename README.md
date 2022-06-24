@@ -24,7 +24,8 @@ These workflows call various other bioinformatics programs:
 - [IRMA](https://wonder.cdc.gov/amd/flu/irma/) is used to match reads to flu
   reference sequences.
     - **Important**. This workflow uses a custom configuration script. Copy
-    `workflow/config/FLU-secondary-iri.sh` to the `<IRMA install
+    `workflow/config/FLU-secondary-iri.sh` and
+    `workflow/config/FLU-primary-iri.sh` to the `<IRMA install
     path>/IRMA_RES/modules/FLU/config/` directory.
 - [VEP](https://grch37.ensembl.org/info/docs/tools/vep/index.html) is used to
   identify effect of nucleotide changes at the protein level.
@@ -35,7 +36,7 @@ These workflows call various other bioinformatics programs:
 - bgzip & gunzip are used for (de)compression.
 - [gffread](http://ccb.jhu.edu/software/stringtie/gff.shtml) is used to write
   transcripts from fasta and GFF files.
-- [transeq](https://www.ebi.ac.uk/Tools/emboss/), is used to translate
+- [transeq](https://www.ebi.ac.uk/Tools/emboss/) is used to translate
   transcripts.
 
 Versions are listed in `workflow/envs/*.yaml`.
@@ -45,7 +46,7 @@ Versions are listed in `workflow/envs/*.yaml`.
 There are several python scripts in [`workflow/scripts`](workflow/scripts) which
 have a couple of dependencies.
 
-Make a python virtual environment and install them with:
+Make a python virtual environment and install the requirements with:
 
 ```bash
 pip install -r requirements.txt
@@ -135,8 +136,8 @@ HTML QC reports are saved in `results/qc-raw` and `results/qc-trimmed`.
 ## IRMA
 
 A config file `irma-config.json` is required to run IRMA. It needs to be pretty
-much identical to `qc-config.json`, but it must also contain an `"errors"` key
-which should be either `"warn"` or `"raise"`, e.g.:
+much identical to `qc-config.json`, but it must also contain an `"errors"` and
+`"order"` keys:
 
 ```
 {
@@ -149,21 +150,28 @@ which should be either `"warn"` or `"raise"`, e.g.:
     "paired",
     "unpaired"
   ],
-  "errors": "warn"
+  "errors": "warn",
+  "order": [
+    "primary",
+    "secondary"
+  ]
 }
 ```
 
-
-If `"warn"` is used, the pipeline will issue warnings if something goes wrong,
-but attempt to carry on. If `"raise"` is used, then errors will stop the
-pipeline.
-
-If you had set `"pair": ["combined", "paired", "unpaired"]` to look at different
-the quality of different types of reads, you may want to now set `"pair":
+- **`"errors"`** controls error handling. If `"errors": "warn"` is used, the
+pipeline will issue warnings if something goes wrong, but attempt to carry on.
+If `"raise"` is used, then errors will stop the pipeline.
+- **`"order"`** controls whether IRMA will conduct a primary analysis (`["primary"]`), a secondary
+analysis (`["secondary"]`), or both (`["primary", "secondary"]`). See the IRMA documentation for the distinction between
+[primary and secondary data](https://wonder.cdc.gov/amd/flu/irma/primary.html)
+and [residual and secondary
+assemblies](https://wonder.cdc.gov/amd/flu/irma/secondary_residual.html).
+- **`"pair"`**. If you had set `"pair": ["combined", "paired", "unpaired"]` to
+look the quality of different types of reads, you may want to now set `"pair":
 ["combined"]` to just analyse the combined paired and unpaired reads, rather
 than conduct three analyses in parallel.
 
-Run the IRMA step using:
+With your config file set up, run IRMA using:
 
 ```bash
 snakemake --snakefile workflow/irma.smk --cores all
@@ -173,17 +181,18 @@ snakemake --snakefile workflow/irma.smk --cores all
 
 When finished three summary files are generated:
 
-- `results/xlsx/variants-mcc-by-sample-ordered.xlsx`. Each _sample_ has its own
-  sheet. Each sheet contains all flu segments found in that sample.
-- `results/xlsx/variants-mcc-by-segment-ordered.xlsx`. Like above, but each
-  _segment_ gets its own sheet.
-- `results/xlsx/variants-mcc-flat-ordered.xlsx`. This contains all variants in
-  one flat sheet.
+- `results/<order>/xlsx/variants-mcc-by-sample-ordered.xlsx`. In this version,
+  each _sample_ has its own sheet, and each sheet contains all influenza
+  segments found in that sample.
+- `results/<order>/xlsx/variants-mcc-by-segment-ordered.xlsx`. Like above, but
+  each _segment_ gets its own sheet.
+- `results/<order>/xlsx/variants-mcc-flat-ordered.xlsx`. This contains all
+  variants in one flat sheet.
 
 ### Sequences
 
 IRMA consensus sequences and amino acid translations are put in
-`results/seq`.
+`results/<order>/seq`.
 
 ### Splice variants
 
@@ -195,9 +204,9 @@ If IRMA finds a consensus sequence for one of these segments that is not the
 expected length, then the behaviour is determined by the config file:
 
 - If `"errors": "warn"` is used, a logfile is produced at the end of the run
-(`logs/incorrect-splice-vars.log`) detailing any segments where the consensus
-was not the expected length. For these, it is highly likely that the variant
-analysis will be incorrect.
+(`logs/incorrect-splice-vars-<order>.log`) detailing any segments where the
+consensus was not the expected length. For these, it is highly likely that the
+variant analysis will be incorrect.
 - Instead, if `"errors": "raise"` is used in the config, the pipeline stops
 immediately if a length mismatch occurs.
 
