@@ -290,7 +290,7 @@ rule combine_samples:
             pair=config["pair"],
         )
     output:
-        "results/{order}/xlsx/variants-mcc-by-sample.xlsx"
+        temp("results/{order}/xlsx/variants-mcc-by-sample.xlsx")
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output}"
 
@@ -299,8 +299,8 @@ rule by_segment_summary:
     input:
         "results/{order}/xlsx/variants-mcc-by-sample.xlsx"
     output:
-        segment="results/{order}/xlsx/variants-mcc-by-segment.xlsx",
-        flat="results/{order}/xlsx/variants-mcc-flat.xlsx"
+        segment=temp("results/{order}/xlsx/variants-mcc-by-segment.xlsx"),
+        flat=temp("results/{order}/xlsx/variants-mcc-flat.xlsx")
     log:
         "logs/make-segment-summary-{order}.log"
     shell:
