@@ -88,16 +88,14 @@ checkpoint find_irma_output:
         directory("results/{order}/irma/{sample}_{pair}")
     log:
         "logs/irma-{order}/{sample}_{pair}.log"
-    params:
-        irma_raw="results/{order}/irma-raw/{sample}_{pair}"
     shell:
         """
         # Find the most nested secondary_assembly dir
-        DIR="$(find {params.irma_raw} -name secondary_assembly | sort | tail -n 1)" > {log}
+        DIR="$(find {input} -name secondary_assembly | sort | tail -n 1)" > {log}
 
         # Some samples may not trigger secondary_assembly ($DIR will be empty for these)
         # For these cases link the regular IRMA output
-        [ -z "$DIR" ] && DIR={params.irma_raw} >> {log}
+        [ -z "$DIR" ] && DIR={input} >> {log}
 
         # Make directory if necessary
         [ ! -d results/{wildcards.order}/irma ] && mkdir results/{wildcards.order}/irma >> {log}
