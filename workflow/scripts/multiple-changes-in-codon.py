@@ -5,6 +5,32 @@ import pandas as pd
 from Bio import Seq
 
 
+HEADERS = (
+    "Variant",
+    "Location",
+    "Segment",
+    "Consequence",
+    "cDNA_position",
+    "Protein_position",
+    "Amino_acids",
+    "Codons",
+    "Reference_Nuc_Position",
+    "Total_Reads",
+    "Consensus_Allele",
+    "Minority_AlleleConsensus_Count",
+    "Minority_Count",
+    "Consensus_Frequency",
+    "Minority_Frequency",
+    "Consensus_Average_Quality",
+    "Minority_Average_Quality",
+    "ConfidenceNotMacErr",
+    "PairedUB",
+    "QualityUB",
+    "Phase",
+    "Mutation_Type",
+)
+
+
 def index_upper(chars) -> int:
     """Return index of the first uppercase character in characters"""
     for i, char in enumerate(chars):
@@ -106,7 +132,12 @@ def aggregate_multiple_changes_in_codon(df) -> pd.DataFrame:
 
 if __name__ == "__main__":
 
-    df = pd.read_table(sys.stdin, index_col="Variant")
+    try:
+        df = pd.read_table(sys.stdin, index_col="Variant")
+    except pd.errors.EmptyDataError:
+        # If there's nothing to read in, write an empty file with correct headers
+        print("\t".join(HEADERS), file=sys.stdout)
+        exit(0)
 
     if df.empty:
         df.to_csv(sys.stdout, sep="\t")
@@ -136,7 +167,9 @@ if __name__ == "__main__":
             # indels get an integer range for Protein_position. The next line extracts the
             # first integer in that range. First convert to str incase the input only
             # contains ints. Leave as an Int64 which can handle NaN values, just in case.
-            .eval("Protein_position = Protein_position.astype('str').str.extract('^(\d+)').astype('Int64')")
+            .eval(
+                "Protein_position = Protein_position.astype('str').str.extract('^(\d+)').astype('Int64')"
+            )
             .sort_values(["Segment", "Protein_position"])
             .to_csv(sys.stdout, sep="\t")
         )
