@@ -63,7 +63,7 @@ setup, then activate it with:
 source ~/.virtualenvs/flu-ngs-env/bin/activate
 ```
 
-## Running the pipeline
+## Running the workflow
 
 Each time you have samples to run, I would suggest cloning this repository:
 
@@ -117,7 +117,7 @@ in a file called `qc-config.json` in the root directory.
 }
 ```
 
-`"pair": ["paired", "unpaired"]` tells the pipeline to generate quality control
+`"pair": ["paired", "unpaired"]` tells the workflow to generate quality control
 reports for paired and unpaired reads separately. You could also add
 `"combined"` to this array, which would generate one QC report of the paired and
 unpaired reads together. This array could also contain only `"combined"`. Do
@@ -159,8 +159,8 @@ much identical to `qc-config.json`, but it must also contain an `"errors"` and
 ```
 
 - **`"errors"`** controls error handling. If `"errors": "warn"` is used, the
-pipeline will issue warnings if something goes wrong, but attempt to carry on.
-If `"raise"` is used, then errors will stop the pipeline.
+workflow will issue warnings if something goes wrong, but attempt to carry on.
+If `"raise"` is used, then errors will stop the workflow.
 - **`"order"`** controls whether IRMA will conduct a primary analysis (`["primary"]`), a secondary
 analysis (`["secondary"]`), or both (`["primary", "secondary"]`). See the IRMA documentation for the distinction between
 [primary and secondary data](https://wonder.cdc.gov/amd/flu/irma/primary.html)
@@ -207,7 +207,7 @@ expected length, then the behaviour is determined by the config file:
 (`logs/incorrect-splice-vars-<order>.log`) detailing any segments where the
 consensus was not the expected length. For these, it is highly likely that the
 variant analysis will be incorrect.
-- Instead, if `"errors": "raise"` is used in the config, the pipeline stops
+- Instead, if `"errors": "raise"` is used in the config, the workflow stops
 immediately if a length mismatch occurs.
 
 (For NS, we know to expect more variability in segment length, and the locations
