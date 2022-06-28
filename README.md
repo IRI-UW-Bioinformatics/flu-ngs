@@ -2,6 +2,14 @@
 
 Influenza virus next generation sequence analysis pipeline.
 
+Highlights:
+
+- Uses [IRMA](https://wonder.cdc.gov/amd/flu/irma/) to iteratively refine
+  reference sequences.
+- Analyses variants for standard influenza A and B segments, and influenza A
+  splice variants: PA-X, PB1-F2, M1, M2.
+- Reports coding effects of nucleotide changes, taking account of multiple SNPs
+  in a codon, and their phase.
 
 ## Requirements
 
@@ -161,10 +169,11 @@ much identical to `qc-config.json`, but it must also contain an `"errors"` and
 - **`"errors"`** controls error handling. If `"errors": "warn"` is used, the
 workflow will issue warnings if something goes wrong, but attempt to carry on.
 If `"raise"` is used, then errors will stop the workflow.
-- **`"order"`** controls whether IRMA will conduct a primary analysis (`["primary"]`), a secondary
-analysis (`["secondary"]`), or both (`["primary", "secondary"]`). See the IRMA documentation for the distinction between
-[primary and secondary data](https://wonder.cdc.gov/amd/flu/irma/primary.html)
-and [residual and secondary
+- **`"order"`** controls whether IRMA will conduct a primary analysis
+(`["primary"]`), a secondary analysis (`["secondary"]`), or both (`["primary",
+"secondary"]`). See the IRMA documentation for the distinction between [primary
+and secondary data](https://wonder.cdc.gov/amd/flu/irma/primary.html) and
+[residual and secondary
 assemblies](https://wonder.cdc.gov/amd/flu/irma/secondary_residual.html).
 - **`"pair"`**. If you had set `"pair": ["combined", "paired", "unpaired"]` to
 look the quality of different types of reads, you may want to now set `"pair":
