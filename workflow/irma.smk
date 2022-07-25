@@ -162,7 +162,8 @@ rule summarise_variants:
         "envs/vep.yaml"
     shell:
         """
-        vep --input_file {input.vcf} \
+        docker run -t -i ensemblorg/ensembl-vep ./vep \
+            --input_file {input.vcf} \
             --output_file {output} \
             --gff {input.gff} \
             --fasta {input.fas} \
