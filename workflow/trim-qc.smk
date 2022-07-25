@@ -1,6 +1,6 @@
 from snakemake.utils import validate, min_version
 
-min_version("7.0.4")
+min_version("5.10.0")
 
 configfile: "qc-config.json"
 validate(config, schema="schemas/qc-config-schema.json")
