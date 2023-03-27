@@ -1,10 +1,8 @@
 .vscode
 .snakemake
-config.json
 results
 raw
 trimmed
 logs
 **__pycache__
-qc-config.json
-irma-config.json
+*.json
