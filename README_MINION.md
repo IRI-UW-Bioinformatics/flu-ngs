@@ -55,7 +55,7 @@ raw
 ```
 
 ## filter fastq reads
-Then the reads are filter and trim reads based on a quality score and length.
+Then the reads are filtered and trimmed based on a quality score and length.
 [chopper] (https://github.com/wdecoster/chopper) is used to do this. Currently the minimum quality score is set at 10, minimum read length is 600 and maximum read length is 2500. This could be made flexible for future.
 
 Specify sample names in a file called trim-qc-config.json in the root directory.
@@ -75,7 +75,7 @@ Combine and filter reads in a single step by calling [`workflow/filter-trim-qc.s
 snakemake --snakefile workflow/filter-trim-qc.smk --cores all
 ```
 
-Both the combined file and the filtered file are saved in `trimmed`.
+Both the combined file and the filtered file are saved in `combined`.
 
 ## Minion Quality Control
 [Minion Quality Control] (https://github.com/roblanf/minion_qc) generates a range of diagnostic plots and data for quality control of sequencing data [sequencing_summary_*.txt]from Oxford Nanopore's MinION. It is run on [sequencing_summary_*.txt]
