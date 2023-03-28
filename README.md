@@ -235,3 +235,83 @@ original `.bam` files. Do:
 ```bash
 snakemake --snakefile workflow/sort-bam.smk --cores all
 ```
+
+#flu-minion
+flu-minion is an Influenza virus next generation sequence analysis pipeline for Oxford MinION data. It is similar to flu-ngs except the following changes:
+
+## Requirements
+
+### snakemake 
+
+[`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) filters and trims reads, 
+
+### Bioinformatics :
+- fastqc and trimmomatic steps are not required.
+- [chopper 0.2.0] (https://github.com/wdecoster/chopper) is used to filter and trim reads.
+
+### R (version 4.2.2)
+There is one R script in [`workflow/scripts`](workflow/scripts) which requires the following packages:
+The script works with these versions.
+
+ [1] optparse_1.7.3      data.table_1.14.2   futile.logger_1.4.3 scales_1.2.1        yaml_2.3.5          readr_2.1.4 
+ [7] reshape2_1.4.4      plyr_1.8.7          viridis_0.6.2       viridisLite_0.4.1   ggplot2_3.4.1 
+
+ ## Running the flu-minion workflow
+
+## Combine and filter fastq files
+The MinION instrument demultiplexes reads, removes primers and outputs multiple zipped fastq files for each sample. 
+The first step combines them and makes a single fastq.gz file for each sample. 
+Then the reads are filtered and trimmed based on a quality score and length using [chopper 0.2.0] (https://github.com/wdecoster/chopper).
+Currently the minimum quality score is set at 10, minimum read length is 600 and maximum read length is 2500. This could be made flexible for future.
+
+The multiple zipped fastq files have to be  put in a directory called `raw` with the following structure:
+
+```
+raw
+├── barcode05
+│   ├── *_0.fastq.gz
+│   ├── *_1.fastq.gz
+│   ├── *_2.fastq.gz
+│   ├── *_3.fastq.gz
+│   │...
+├── barcode06
+│   ├── *_0.fastq.gz
+│   ├── *_1.fastq.gz
+│   ├── *_2.fastq.gz
+│   ├── *_3.fastq.gz
+│   │...
+├── barcode07
+│   ├── *_0.fastq.gz
+│   ├── *_1.fastq.gz
+│   ├── *_2.fastq.gz
+│   ├── *_3.fastq.gz
+│   │...
+...
+```
+
+Specify sample names in a file called trim-qc-config.json in the root directory.
+
+```
+{
+  "samples": [
+    "barcode05",
+    "barcode06",
+    "barcode07"
+  ]
+}
+```
+Combine and filter reads in a single step by calling [`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) 
+
+```bash
+snakemake --snakefile workflow/filter-trim-qc.smk --cores all
+```
+
+Both the combined file and the filtered file are saved in `combined`.
+
+## Minion Quality Control
+[Minion Quality Control] (https://github.com/roblanf/minion_qc) generates a range of diagnostic plots and data for quality control of sequencing data from Oxford Nanopore's MinION. It is an R script which uses the sequencing_summary_*.txt file which is an output from MinION. 
+
+call 
+```bash
+Rscripts workflow/minion-qc.r sequencing_summmary_*.txt
+```
