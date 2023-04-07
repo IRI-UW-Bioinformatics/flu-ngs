@@ -245,22 +245,33 @@ flu-minion is an Influenza virus next generation sequence analysis pipeline for 
 
 ### snakemake 
 
-[`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) filters and trims reads, 
+Similar to the flu-ngs pipeline, the flu-minion 'pipeline' is really two
+[snakemake](https://snakemake.readthedocs.io/en/stable/) workflows:
+[`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) filters and trims reads, and
+[`workflow/irma.smk`](workflow/irma.smk) which
+runs IRMA and generates summary output.
 
 ### Bioinformatics :
-- fastqc and trimmomatic steps are not required.
 - [chopper 0.2.0] (https://github.com/wdecoster/chopper) is used to filter and trim reads.
 
 ### R (version 4.2.2)
 There is one R script in [`workflow/scripts`](workflow/scripts) which requires the following packages:
-The script works with these versions.
 
- [1] optparse_1.7.3      data.table_1.14.2   futile.logger_1.4.3 scales_1.2.1        yaml_2.3.5          readr_2.1.4 
- [7] reshape2_1.4.4      plyr_1.8.7          viridis_0.6.2       viridisLite_0.4.1   ggplot2_3.4.1 
+ optparse_1.7.3
+ data.table_1.14.2 
+ futile.logger_1.4.3 
+ scales_1.2.1
+ yaml_2.3.5
+ readr_2.1.4
+ reshape2_1.4.4
+ plyr_1.8.7
+ viridis_0.6.2
+ viridisLite_0.4.1
+ ggplot2_3.4.1 
 
- ## Running the flu-minion workflow
+## Running the flu-minion workflow
 
-## Combine and filter fastq files
+### Combine and filter fastq files
 The MinION instrument demultiplexes reads, removes primers and outputs multiple zipped fastq files for each sample. 
 The first step in the flu-minion workflow combines the multiple zipped fastq files and makes a single fastq.gz file for each sample. 
 Then the reads are filtered and trimmed based on a quality score and length using [chopper 0.2.0] (https://github.com/wdecoster/chopper).
@@ -302,7 +313,7 @@ Specify sample names in a file called trim-qc-config.json in the root directory.
   ]
 }
 ```
-Combine and filter reads in a single step by calling [`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) 
+Combine and filter reads by calling [`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) 
 
 ```bash
 snakemake --snakefile workflow/filter-trim-qc.smk --cores all
