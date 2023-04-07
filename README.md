@@ -236,7 +236,9 @@ original `.bam` files. Do:
 snakemake --snakefile workflow/sort-bam.smk --cores all
 ```
 
-#flu-minion
+---
+
+# flu-minion
 flu-minion is an Influenza virus next generation sequence analysis pipeline for Oxford MinION data. It is similar to flu-ngs except the following changes:
 
 ## Requirements
@@ -260,7 +262,7 @@ The script works with these versions.
 
 ## Combine and filter fastq files
 The MinION instrument demultiplexes reads, removes primers and outputs multiple zipped fastq files for each sample. 
-The first step combines them and makes a single fastq.gz file for each sample. 
+The first step in the flu-minion workflow combines the multiple zipped fastq files and makes a single fastq.gz file for each sample. 
 Then the reads are filtered and trimmed based on a quality score and length using [chopper 0.2.0] (https://github.com/wdecoster/chopper).
 Currently the minimum quality score is set at 10, minimum read length is 600 and maximum read length is 2500. This could be made flexible for future.
 
