@@ -245,11 +245,9 @@ flu-minion is an Influenza virus next generation sequence analysis pipeline for 
 
 ### snakemake 
 
-Similar to the flu-ngs pipeline, the flu-minion 'pipeline' is really two
-[snakemake](https://snakemake.readthedocs.io/en/stable/) workflows:
-[`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) filters and trims reads, and
-[`workflow/irma.smk`](workflow/irma.smk) which
-runs IRMA and generates summary output.
+Similar to the flu-ngs pipeline, the flu-minion 'pipeline' is really two [snakemake](https://snakemake.readthedocs.io/en/stable/) workflows:
+- [`workflow/filter-trim-qc.smk`](workflow/filter-trim-qc.smk) filters and trims reads, and
+- [`workflow/irma.smk`](workflow/irma.smk) which runs IRMA and generates summary output.
 
 ### Bioinformatics :
 - [chopper 0.2.0] (https://github.com/wdecoster/chopper) is used to filter and trim reads.
@@ -257,24 +255,27 @@ runs IRMA and generates summary output.
 ### R (version 4.2.2)
 There is one R script in [`workflow/scripts`](workflow/scripts) which requires the following packages:
 
- optparse_1.7.3
- data.table_1.14.2 
- futile.logger_1.4.3 
- scales_1.2.1
- yaml_2.3.5
- readr_2.1.4
- reshape2_1.4.4
- plyr_1.8.7
- viridis_0.6.2
- viridisLite_0.4.1
- ggplot2_3.4.1 
+- optparse_1.7.3
+- data.table_1.14.2 
+- futile.logger_1.4.3 
+- scales_1.2.1
+- yaml_2.3.5
+- readr_2.1.4
+- reshape2_1.4.4
+- plyr_1.8.7
+- viridis_0.6.2
+- viridisLite_0.4.1
+- ggplot2_3.4.1 
 
 ## Running the flu-minion workflow
 
 ### Combine and filter fastq files
-The MinION instrument demultiplexes reads, removes primers and outputs multiple zipped fastq files for each sample. 
-The first step in the flu-minion workflow combines the multiple zipped fastq files and makes a single fastq.gz file for each sample. 
+The MinION instrument demultiplexes reads, removes primers and outputs multiple zipped fastq files for each sample.
+
+The first step in the flu-minion workflow combines the multiple zipped fastq files and makes a single fastq.gz file for each sample.
+
 Then the reads are filtered and trimmed based on a quality score and length using [chopper 0.2.0] (https://github.com/wdecoster/chopper).
+
 Currently the minimum quality score is set at 10, minimum read length is 600 and maximum read length is 2500. This could be made flexible for future.
 
 The multiple zipped fastq files have to be  put in a directory called `raw` with the following structure:
@@ -319,12 +320,12 @@ Combine and filter reads by calling [`workflow/filter-trim-qc.smk`](workflow/fil
 snakemake --snakefile workflow/filter-trim-qc.smk --cores all
 ```
 
-Both the combined file and the filtered file are saved in `combined`.
+This step outputs two files, combined and filtered. Both are saved in `combined`.
 
 ## Minion Quality Control
-[Minion Quality Control] (https://github.com/roblanf/minion_qc) generates a range of diagnostic plots and data for quality control of sequencing data from Oxford Nanopore's MinION. It is an R script which uses the sequencing_summary_*.txt file which is an output from MinION. 
+[Minion Quality Control] (https://github.com/roblanf/minion_qc) generates a range of diagnostic plots and data for quality control of sequencing data from Oxford Nanopore's MinION. It is an R script which uses the sequencing_summary.txt file which is an output from MinION. 
 
 call 
 ```bash
-Rscripts workflow/minion-qc.r sequencing_summmary_*.txt
+Rscripts workflow/minion-qc.r {sequencing_summmary}.txt
 ```
