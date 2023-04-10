@@ -3,10 +3,10 @@ from snakemake.utils import validate, min_version
 min_version("7.0.4")
 
 
-configfile: "irma-config.json"
+configfile: "config.json"
 
 
-validate(config, schema="schemas/irma-config-schema.json")
+validate(config, schema="schemas/config-schema.json")
 
 
 rule all:

@@ -1,6 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
   "properties": {
+    "platform": {
+      "type": "string",
+      "enum": [
+        "miseq",
+        "minion"
+      ]
+    },
     "samples": {
       "type": "array",
       "items": {
