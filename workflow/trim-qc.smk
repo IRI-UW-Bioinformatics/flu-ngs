@@ -33,9 +33,9 @@ rule unzip:
     input:
         "raw/{sample}/{sample}_{n}.fastq.gz",
     output:
-        "raw/{sample}/{sample}_{n}.fastq",
+        temp("raw/{sample}/{sample}_{n}.fastq"),
     shell:
-        "gunzip {input}"
+        "gunzip --keep {input}"
 
 
 rule raw_quality_control:

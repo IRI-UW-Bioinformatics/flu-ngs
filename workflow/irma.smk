@@ -43,20 +43,9 @@ wildcard_constraints:
     order="(primary)|(secondary)",
 
 
-rule combine_paired_unpaired:
-    input:
-        "trimmed/{sample}/{sample}_{n}_paired.fastq",
-        "trimmed/{sample}/{sample}_{n}_unpaired.fastq",
-    output:
-        "trimmed/{sample}/{sample}_{n}_combined.fastq",
-    shell:
-        "cat {input} > {output}"
-
-
 rule irma_raw:
     input:
-        "trimmed/{sample}/{sample}_1_{pair}.fastq",
-        "trimmed/{sample}/{sample}_2_{pair}.fastq",
+        expand("processed_reads/{{sample}}/{{sample}}_{n}_{{pair}}.fastq", n=(1, 2)),
     output:
         directory("results/{order}/irma-raw/{sample}_{pair}"),
     log:
