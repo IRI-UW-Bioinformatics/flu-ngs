@@ -13,18 +13,8 @@ def build_targets(wildcards):
     """Generate a list of targets to build."""
 
     if config["platform"] == "minion":
-        return (
-            expand(
-                "combined/{sample}/{sample}_combined.fastq.gz", sample=config["samples"]
-            )
-            + expand(
-                "combined/{sample}/{sample}_filtered.fastq.gz", sample=config["samples"]
-            )
-            + expand(
-                "combined/{sample}/{sample}_{pair}.fastq.gz",
-                sample=config["samples"],
-                pair=config["pair"],
-            )
+        return expand(
+            "combined/{sample}/{sample}_filtered.fastq.gz", sample=config["samples"]
         )
 
     elif config["platform"] == "miseq":
@@ -50,11 +40,11 @@ rule all:
 
 if config["platform"] == "minion":
 
-    include: "workflow/rules/filter-trim-qc.smk"
+    include: "workflow/rules/preprocess-minion.smk"
 
 elif config["platform"] == "miseq":
 
-    include: "workflow/rules/trim-qc.smk"
+    include: "workflow/rules/preprocess-miseq.smk"
 
 else:
     raise ValueError("'platform' should be 'miseq' or 'minion'")

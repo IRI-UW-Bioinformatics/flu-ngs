@@ -1,29 +1,3 @@
-from snakemake.utils import validate, min_version
-
-min_version("7.0.4")
-
-
-configfile: "config.json"
-
-
-validate(config, schema="schemas/config-schema.json")
-
-
-rule all:
-    input:
-        expand(
-            "results/qc-raw/{sample}_{n}_fastqc.html",
-            sample=config["samples"],
-            n=[1, 2],
-        ),
-        expand(
-            "results/qc-trimmed/{sample}_{n}_{pair}_fastqc.html",
-            sample=config["samples"],
-            n=[1, 2],
-            pair=config["pair"],
-        ),
-
-
 wildcard_constraints:
     pair="((un)?paired)|(combined)",
     n="1|2",
