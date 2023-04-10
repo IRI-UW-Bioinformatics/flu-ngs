@@ -5,7 +5,7 @@ Running IRMA on MinION data.
 
 rule irma_raw:
     input:
-        "processed_reads/{sample}/{sample}.fastq.gz",
+        "processed_reads/{sample}/{sample}_filtered.fastq.gz",
     output:
         directory("results/{order}/irma-raw/{sample}_{pair}"),
     log:
