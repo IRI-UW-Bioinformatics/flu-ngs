@@ -8,6 +8,34 @@ configfile: "config.json"
 
 validate(config, schema="schemas/config-schema.json")
 
+
+def expand_order(path):
+    "Helper function to call expand with config order."
+    return expand(path, order=config["order"])
+
+
+def expand_sample_pair_order(path):
+    "Helper function to call expand with config sample, pair and order."
+    return expand(
+        path, sample=config["samples"], pair=config["pair"], order=config["order"]
+    )
+
+
+rule all:
+    input:
+        expand_order("results/{order}/xlsx/variants-mcc-by-sample-ordered.xlsx"),
+        expand_order("results/{order}/xlsx/variants-mcc-by-segment-ordered.xlsx"),
+        expand_order("results/{order}/xlsx/variants-mcc-flat-ordered.xlsx"),
+        expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
+        expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
+
+
+wildcard_constraints:
+    n="1|2",
+    pair="(paired)|(combined)|(longread)",
+    order="(primary)|(secondary)",
+
+
 if config["platform"] == "miseq":
 
     include: "rules/irma_miseq.smk"
@@ -18,40 +46,6 @@ elif config["platform"] == "minion":
 
 else:
     raise ValueError("'platform' should be 'miseq' or 'minion'")
-
-
-rule all:
-    input:
-        expand(
-            "results/{order}/xlsx/variants-mcc-by-sample-ordered.xlsx",
-            order=config["order"],
-        ),
-        expand(
-            "results/{order}/xlsx/variants-mcc-by-segment-ordered.xlsx",
-            order=config["order"],
-        ),
-        expand(
-            "results/{order}/xlsx/variants-mcc-flat-ordered.xlsx",
-            order=config["order"],
-        ),
-        expand(
-            "results/{order}/seq/{sample}_{pair}/aa.fasta",
-            sample=config["samples"],
-            pair=config["pair"],
-            order=config["order"],
-        ),
-        expand(
-            "results/{order}/seq/{sample}_{pair}/nt.fasta",
-            sample=config["samples"],
-            pair=config["pair"],
-            order=config["order"],
-        ),
-
-
-wildcard_constraints:
-    n="1|2",
-    pair="(paired)|(combined)",
-    order="(primary)|(secondary)",
 
 
 checkpoint find_irma_output:
