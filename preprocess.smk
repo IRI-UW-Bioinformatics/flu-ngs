@@ -14,7 +14,8 @@ def build_targets(wildcards):
 
     if config["platform"] == "minion":
         return expand(
-            "combined/{sample}/{sample}_filtered.fastq.gz", sample=config["samples"]
+            "processed_reads/{sample}/{sample}_filtered.fastq.gz",
+            sample=config["samples"],
         )
 
     elif config["platform"] == "miseq":

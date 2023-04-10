@@ -8,6 +8,17 @@ configfile: "config.json"
 
 validate(config, schema="schemas/config-schema.json")
 
+if config["platform"] == "miseq":
+
+    include: "rules/irma_miseq.smk"
+
+elif config["platform"] == "minion":
+
+    include: "rules/irma_minion.smk"
+
+else:
+    raise ValueError("'platform' should be 'miseq' or 'minion'")
+
 
 rule all:
     input:
@@ -41,19 +52,6 @@ wildcard_constraints:
     n="1|2",
     pair="(paired)|(combined)",
     order="(primary)|(secondary)",
-
-
-rule irma_raw:
-    input:
-        expand("processed_reads/{{sample}}/{{sample}}_{n}_{{pair}}.fastq", n=(1, 2)),
-    output:
-        directory("results/{order}/irma-raw/{sample}_{pair}"),
-    log:
-        ".logs/irma-{order}-raw/{sample}_{pair}.log",
-    conda:
-        "envs/irma.yaml"
-    shell:
-        "IRMA FLU-{wildcards.order}-iri {input} {output} > {log}"
 
 
 checkpoint find_irma_output:
