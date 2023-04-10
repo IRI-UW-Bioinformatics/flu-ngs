@@ -1,3 +1,8 @@
+"""
+Preprocessing steps for miseq data.
+"""
+
+
 wildcard_constraints:
     pair="((un)?paired)|(combined)",
     n="1|2",
