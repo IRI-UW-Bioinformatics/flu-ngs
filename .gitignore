@@ -3,8 +3,8 @@
 config.json
 results
 raw
-trimmed
-logs
+processed_reads
+.logs
 **__pycache__
 qc-config.json
 irma-config.json
