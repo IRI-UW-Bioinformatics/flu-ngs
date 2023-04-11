@@ -1,3 +1,4 @@
+from typing import Callable
 from snakemake.utils import validate, min_version
 
 min_version("7.0.4")
@@ -9,12 +10,12 @@ configfile: "config.json"
 validate(config, schema="schemas/config-schema.json")
 
 
-def expand_order(path):
+def expand_order(path: str) -> list[str]:
     "Helper function to call expand with config order."
     return expand(path, order=config["order"])
 
 
-def expand_sample_pair_order(path):
+def expand_sample_pair_order(path: str) -> list[str]:
     "Helper function to call expand with config sample, pair and order."
     return expand(
         path, sample=config["samples"], pair=config["pair"], order=config["order"]
@@ -36,16 +37,7 @@ wildcard_constraints:
     order="(primary)|(secondary)",
 
 
-if config["platform"] == "miseq":
-
-    include: "rules/irma_miseq.smk"
-
-elif config["platform"] == "minion":
-
-    include: "rules/irma_minion.smk"
-
-else:
-    raise ValueError("'platform' should be 'miseq' or 'minion'")
+include: f"rules/irma_{config['platform']}.smk"
 
 
 checkpoint find_irma_output:
@@ -187,7 +179,7 @@ rule multiple_changes_in_codon:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
 
-def collect_segments(path):
+def collect_segments(path: str) -> Callable:
     """
     A function that returns a function which make a list of files containing
     segment names, based on segments that IRMA has found.
