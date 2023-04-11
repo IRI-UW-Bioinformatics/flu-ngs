@@ -6,7 +6,7 @@ min_version("7.0.4")
 configfile: "config.json"
 
 
-validate(config, schema="workflow/schemas/config-schema.json")
+validate(config, schema="schemas/config-schema.json")
 
 
 def build_targets(wildcards):
@@ -41,11 +41,11 @@ rule all:
 
 if config["platform"] == "minion":
 
-    include: "workflow/rules/preprocess-minion.smk"
+    include: "rules/preprocess-minion.smk"
 
 elif config["platform"] == "miseq":
 
-    include: "workflow/rules/preprocess-miseq.smk"
+    include: "rules/preprocess-miseq.smk"
 
 else:
     raise ValueError("'platform' should be 'miseq' or 'minion'")
