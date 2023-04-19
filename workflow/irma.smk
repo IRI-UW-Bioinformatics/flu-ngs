@@ -10,12 +10,12 @@ configfile: "config.json"
 validate(config, schema="schemas/config-schema.json")
 
 
-def expand_order(path: str) -> list[str]:
+def expand_order(path):
     "Helper function to call expand with config order."
     return expand(path, order=config["order"])
 
 
-def expand_sample_pair_order(path: str) -> list[str]:
+def expand_sample_pair_order(path):
     "Helper function to call expand with config sample, pair and order."
     return expand(
         path, sample=config["samples"], pair=config["pair"], order=config["order"]
@@ -179,10 +179,10 @@ rule multiple_changes_in_codon:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
 
-def collect_segments(path: str) -> Callable:
+def collect_segments(path):
     """
-    A function that returns a function which make a list of files containing
-    segment names, based on segments that IRMA has found.
+    Returns a function which make a list of files containing segment names, based on
+    segments that IRMA has found.
 
     Args:
         path (str): What file names should look like. It should contain
