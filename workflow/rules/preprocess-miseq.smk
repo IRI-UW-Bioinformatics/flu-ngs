@@ -23,7 +23,7 @@ rule raw_quality_control:
     output:
         "results/qc-raw/{sample}_{n}_fastqc.html",
     conda:
-        "envs/fastqc.yaml"
+        "../envs/fastqc.yaml"
     log:
         ".logs/fastqc/fastqc_{sample}_{n}.log",
     shell:
@@ -36,7 +36,7 @@ rule trimmed_quality_control:
     output:
         "results/qc-trimmed/{sample}_{n}_{pair}_fastqc.html",
     conda:
-        "envs/fastqc.yaml"
+        "../envs/fastqc.yaml"
     log:
         ".logs/fastqc/fastqc_{sample}_{n}_{pair}.log",
     shell:
@@ -55,7 +55,7 @@ rule trim:
     log:
         ".logs/trimmomatic/trimmomatic_{sample}.log",
     conda:
-        "envs/trimmomatic.yaml"
+        "../envs/trimmomatic.yaml"
     shell:
         "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 &> {log}"
 
