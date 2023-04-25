@@ -290,7 +290,7 @@ rule by_segment_summary:
         # grep's exit status is 1 if it doesn't find any matches, causing snakemake to throw an error
         # set +e, set -e prevents this
         set +e
-        grep 'Length of consensus found by IRMA ' logs/write_gff/*.log > logs/incorrect-splice-vars-{wildcards.order}.log
+        grep 'Length of consensus found by IRMA ' .logs/write_gff/*.log > .logs/incorrect-splice-vars-{wildcards.order}.log
         set -e
         """
 
