@@ -12,6 +12,7 @@ rule irma_raw:
         ".logs/irma-{order}-raw/{sample}_{pair}.log",
     conda:
         "../envs/irma.yaml"
-    threads: workflow.cores  # take all cores to stop multiple instances of this rule fighting for threads
+    threads:
+        4  # Feel free to set higher if you don't have many samples
     shell:
         "IRMA FLU-{wildcards.order}-iri {input} {output} > {log}"
