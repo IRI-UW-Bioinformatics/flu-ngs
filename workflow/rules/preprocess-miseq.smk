@@ -62,7 +62,7 @@ rule trim:
 
 rule combine_paired_unpaired:
     input:
-        expand("processed_reads/{{sample}}/{{sample}}_{n}_paired.fastq", n=(1, 2)),
+        expand("processed_reads/{{sample}}/{{sample}}_{{n}}_{mode}.fastq", mode=("paired", "unpaired")),
     output:
         "processed_reads/{sample}/{sample}_{n}_combined.fastq",
     shell:
