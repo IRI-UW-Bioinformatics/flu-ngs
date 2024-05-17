@@ -38,7 +38,7 @@ These workflows call various other bioinformatics programs:
   - VEP is written in Perl and requires a module called `Bundle::DBI`. Install it
     with `perl -MCPAN -e 'install Bundle::DBI'`
 - [tabix](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3042176/) is required to
-  preprocess files for VEP.
+  preprocess files for VEP. Install via `perl -MCPAN -e 'install Bio::DB::HTS::Tabix'`.
 - bgzip & gunzip are used for (de)compression.
 - [gffread](http://ccb.jhu.edu/software/stringtie/gff.shtml) is used to write
   transcripts from fasta and GFF files.
