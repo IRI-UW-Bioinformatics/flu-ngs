@@ -10,6 +10,7 @@ Highlights:
   splice variants: PA-X, PB1-F2, M1, M2.
 - Reports coding effects of nucleotide changes, taking account of multiple SNPs
   in a codon, and their phase.
+- Support for MinION and MiSeq data.
 
 ## Requirements
 
@@ -17,8 +18,8 @@ Highlights:
 
 The 'pipeline' is really two
 [snakemake](https://snakemake.readthedocs.io/en/stable/) workflows:
-[`workflow/trim-qc.smk`](workflow/trim-qc.smk), which trims reads and runs
-quality control measures, and [`workflow/irma.smk`](workflow/irma.smk) which
+[`preprocess.smk`](workflow/preprocess.smk), which trims reads and runs
+quality control measures, and [`irma.smk`](workflow/irma.smk) which
 runs IRMA and generates summary output.
 
 ### Bioinformatics
@@ -31,13 +32,10 @@ These workflows call various other bioinformatics programs:
   adapters off reads.
 - [IRMA](https://wonder.cdc.gov/amd/flu/irma/) is used to match reads to flu
   reference sequences.
-    - **Important**. This workflow uses a custom configuration script. Copy
-    `workflow/config/FLU-secondary-iri.sh` and
-    `workflow/config/FLU-primary-iri.sh` to the `<IRMA install
-    path>/IRMA_RES/modules/FLU/config/` directory.
+    - **Important**. This workflow uses a custom configuration script. Copy the `.sh` files in `workflow/config` to the `<IRMA install path>/IRMA_RES/modules/FLU/config/` directory.
 - [VEP](https://grch37.ensembl.org/info/docs/tools/vep/index.html) is used to
   identify effect of nucleotide changes at the protein level.
-  - VEP is written in Perl and requires a module called Bundle::DBI. Install it
+  - VEP is written in Perl and requires a module called `Bundle::DBI`. Install it
     with `perl -MCPAN -e 'install Bundle::DBI'`
 - [tabix](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3042176/) is required to
   preprocess files for VEP.
@@ -46,6 +44,8 @@ These workflows call various other bioinformatics programs:
   transcripts from fasta and GFF files.
 - [transeq](https://www.ebi.ac.uk/Tools/emboss/) is used to translate
   transcripts.
+- [chopper](https://github.com/wdecoster/chopper) is used for filtering and trimming MinION data.
+- [MinIONQC](https://github.com/roblanf/minion_qc) is used for generating quality control reports of MinION data.
 
 Versions are listed in `workflow/envs/*.yaml`.
 
@@ -81,10 +81,16 @@ git clone git@github.com:IRI-UW-Bioinformatics/flu-ngs.git <name>
 
 where `<name>` is the name of the directory that you want, then `cd <name>`.
 
-Then, put reads in a directory called `raw` with the following structure:
+## Data
+
+The next step is to put the read files in a structure expected by the workflow.
+
+### MiSeq
+
+Put reads in a directory called `raw` with the following structure:
 
 ```
-raw
+raw/
 ├── trimlog.fas
 ├── YK_2832
 │   ├── YK_2832_1.fastq
@@ -101,94 +107,98 @@ raw
 It is fine if the `fastq` files are gzipped (i.e. have a `.gz` suffix).
 
 Forward and reverse reads should be in `{sample}_1.fastq` and `{sample}_2.fastq`
-respectively. Either rename files accordingly or ask David to program more
-flexibility.
+respectively.
 
 `trimlog.fas` should contain the adapters.
 
-## Quality control
+### MinION
 
-The first step is to trim adapters and run quality control. Specify sample names
-in a file called `qc-config.json` in the root directory.
+Put reads in a directory called `raw`. They must be gzipped (end with `fastq.gz`).
+
+```
+raw/
+├── barcode05
+│   ├── FAW31148_pass_barcode05_485f6488_e81f1340_820.fastq.gz
+│   ├── FAW31148_pass_barcode05_485f6488_e81f1340_821.fastq.gz
+...
+├── barcode06
+│   ├── FAW31148_pass_barcode06_11f103b9_993a7465_30.fastq.gz
+│   ├── FAW31148_pass_barcode06_11f103b9_993a7465_31.fastq.gz
+...
+```
+
+The names of subdirectories (`barcode05` and `barcode06`) define the names of samples. All `.fastq.gz` files in each subdirectory are assigned to that sample name.
+
+## Configuration
+
+Run parameters are passed to the workflow by a file called `config.json` that should have these keys:
+
+- `platform`. Either `minion` or `miseq`.
+- `samples`. A list containing the sample IDs to analyse.
+- `pair`. A list containing one or more of `paired`, `unpaired` and `combined`. This controls whether to analyse paired, unpaired and/or paired and unpaired reads combined. For MinION data `pair` must be `longread`. The concept of paired and unpaired reads does not apply to MinION data but for implementation ease `longread` is used as a placeholder in the workflow wherever `paired`/`unpaired`/`combined` would be used in a MiSeq analysis.
+- `order`. A list containing one or both of `primary` and `secondary`. See the IRMA documentation for the distinction between [primary and secondary data](https://wonder.cdc.gov/amd/flu/irma/primary.html) and [residual and secondary assemblies](https://wonder.cdc.gov/amd/flu/irma/secondary_residual.html). If both `primary` and `secondary` are supplied the workflow will do both, and runtime will approximately double.
+- `errors`. Either `warn` or `raise`. This controls error handling for some steps in the workflow. `warn` issues warnings if something goes wrong, but will attempt to carry on. `raise` would not carry on.
+
+MiSeq example:
 
 ```
 {
+  "platform": "miseq",
   "samples": [
-    "YK_2832",
-    "YK_2833",
-    "YK_2834"
+    "YK_2837",
+    "YK_2970"
   ],
   "pair": [
-    "paired",
-    "unpaired"
-  ]
-}
-```
-
-`"pair": ["paired", "unpaired"]` tells the workflow to generate quality control
-reports for paired and unpaired reads separately. You could also add
-`"combined"` to this array, which would generate one QC report of the paired and
-unpaired reads together. This array could also contain only `"combined"`. Do
-whatever makes sense for your analysis.
-
-Then, run trimming and quality control on these samples by calling snakemake:
-
-```bash
-snakemake --snakefile workflow/trim-qc.smk --cores all
-```
-
-Change the value of `cores` as you like.
-
-HTML QC reports are saved in `results/qc-raw` and `results/qc-trimmed`.
-
-## IRMA
-
-A config file `irma-config.json` is required to run IRMA. It needs to be pretty
-much identical to `qc-config.json`, but it must also contain an `"errors"` and
-`"order"` keys:
-
-```
-{
-  "samples": [
-    "YK_2832",
-    "YK_2833",
-    "YK_2834"
+    "combined"
   ],
-  "pair": [
-    "paired",
-    "unpaired"
-  ],
-  "errors": "warn",
   "order": [
     "primary",
     "secondary"
-  ]
+  ],
+  "errors": "warn"
 }
 ```
 
-- **`"errors"`** controls error handling. If `"errors": "warn"` is used, the
-workflow will issue warnings if something goes wrong, but attempt to carry on.
-If `"raise"` is used, then errors will stop the workflow.
-- **`"order"`** controls whether IRMA will conduct a primary analysis
-(`["primary"]`), a secondary analysis (`["secondary"]`), or both (`["primary",
-"secondary"]`). See the IRMA documentation for the distinction between [primary
-and secondary data](https://wonder.cdc.gov/amd/flu/irma/primary.html) and
-[residual and secondary
-assemblies](https://wonder.cdc.gov/amd/flu/irma/secondary_residual.html).
-- **`"pair"`**. If you had set `"pair": ["combined", "paired", "unpaired"]` to
-look the quality of different types of reads, you may want to now set `"pair":
-["combined"]` to just analyse the combined paired and unpaired reads, rather
-than conduct three analyses in parallel.
+MinION example:
 
-With your config file set up, run IRMA using:
+```
+{
+  "platform": "minion",
+  "samples": [
+    "barcode05",
+    "barcode06"
+  ],
+  "pair": [
+    "longread"
+  ],
+  "order": [
+    "primary",
+  ],
+  "errors": "warn"
+}
+```
+
+## Preprocessing
+
+Reads are first preprocessed. For MiSeq data adapters are trimmed and quality control reports are generated. For MinION data reads are filtered by a min and max length. See `workflow/rules/preprocess-{minion,miseq}.smk` for details.
 
 ```bash
-snakemake --snakefile workflow/irma.smk --cores all
+snakemake -s workflow/preprocess.smk -c all
+```
+
+`-c all` tells snakemake to use all available cores, scale this back if need be. HTML QC reports for MinION data are saved in `results/qc-raw` and `results/qc-trimmed`.
+
+## Variant calling
+
+Run IRMA and make summary reports of the output:
+
+```bash
+snakemake -s workflow/irma.smk -c all
 ```
 
 ### Variant summary reports
 
-When finished three summary files are generated:
+Three summary files are generated:
 
 - `results/<order>/xlsx/variants-mcc-by-sample-ordered.xlsx`. In this version,
   each _sample_ has its own sheet, and each sheet contains all influenza
@@ -222,8 +232,6 @@ immediately if a length mismatch occurs.
 (For NS, we know to expect more variability in segment length, and the locations
 of exons are flexibly determined.)
 
----
-
 ## Bonus: sorted BAM files
 
 Most software to look at reads alignments require sorted bam files, and/or bam
@@ -233,5 +241,5 @@ files IRMA generates. It requires [samtools](http://www.htslib.org/).
 original `.bam` files. Do:
 
 ```bash
-snakemake --snakefile workflow/sort-bam.smk --cores all
+snakemake -s workflow/sort-bam.smk -c all
 ```
