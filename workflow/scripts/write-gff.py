@@ -49,7 +49,7 @@ def find_ns_splice_acceptor(seq: str, donor_loc=None) -> int:
     Find the 'AG' splice acceptor signal. Returns an int which is the index of the 'A'.
 
     Notes:
-        Should be >350 nts downstread of the splice donor location.
+        Should be >350 nts downstream of the splice donor location.
 
     Args:
         seq (str)
