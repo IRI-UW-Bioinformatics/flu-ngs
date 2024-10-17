@@ -373,12 +373,14 @@ rule make_abayesqr_config:
     output:
         "results/qsr/{sample}/{segment}/abayesqr_config.txt"
     shell:
-        "workflow/scripts/make-abayesqr-config.py --fasta {input.fasta} --sam {input.sam} > {output}"
+        # aBayesQR needs just the filename of the sam and fasta files, not their whole paths
+        "workflow/scripts/make-abayesqr-config.py --fasta {wildcards.segment}-nt.fasta --sam aligned.sam > {output}"
 
 
 rule abayes_qsr:
     input:
-        make_abayesqr_config.output
+        "results/qsr/{sample}/{segment}/abayesqr_config.txt",
+        "results/qsr/{sample}/{segment}/aligned.sam"
     output:
         "results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta"
     params:
