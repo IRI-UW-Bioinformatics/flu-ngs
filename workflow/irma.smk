@@ -355,7 +355,7 @@ rule trim_fastq:
 
 rule align_unfiltered_to_segment:
     input:
-        "results/primary/seq/{sample}_paired/separate/{segment}-nt.fasta",
+        "results/primary/seq/{sample}_combined/separate/{segment}-nt.fasta",
         ".processed_reads_qsr/{sample}/{sample}_1_paired.fastq",
         ".processed_reads_qsr/{sample}/{sample}_2_paired.fastq"
     output:
