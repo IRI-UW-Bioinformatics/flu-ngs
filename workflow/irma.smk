@@ -335,3 +335,61 @@ rule order_columns:
                 Codon_Position \
                 Multiple_Changes_In_Codon
         """
+
+
+rule trim_fastq:
+    input:
+        "raw/{sample}/{sample}_{n}.fastq"
+    output:
+        [
+            f".processed_reads_qsr/{{sample}}/{{sample}}_{n}_{pair}.fastq"
+            for n in (1, 2)
+            for pair in ("paired", "unpaired")
+        ]
+    log:
+        ".logs/qsr/trim_{wildcards.sample}_{wildcards.segment}.txt"
+    shell:
+        "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 2> {log}"
+
+
+rule align_unfiltered_to_segment:
+    input:
+        "results/primary/seq/{sample}_paired/separate/{segment}-nt.fasta",
+        ".processed_reads_qsr/{sample}/{sample}_1_paired.fastq",
+        ".processed_reads_qsr/{sample}/{sample}_2_paired.fastq"
+    output:
+        "results/qsr/{sample}/{segment}/aligned.sam"
+    log:
+        ".logs/qsr/minimap2_{wildcards.sample}_{wildcards.segment}.txt"
+    shell:
+        "minimap2 -ax sr {input} > {output} 2> {log}"
+
+
+rule make_abayesqr_config:
+    input:
+        fasta="results/primary/seq/{sample}_paired/separate/{segment}-nt.fasta",
+        sam="results/qsr/{sample}/{segment}/aligned.sam"
+    output:
+        "results/qsr/{sample}/{segment}/abayesqr_config.txt"
+    shell:
+        "workflow/scripts/make-abayesqr-config.py --fasta {input.fasta} --sam {input.sam} > {output}"
+
+
+rule abayes_qsr:
+    input:
+        make_abayesqr_config.output
+    output:
+        "results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta"
+    params:
+        working_dir="results/qsr/{wildcards.sample}/{wildcards.segment}"
+    log:
+        ".logs/qsr/aBayesQr_{wildcards.sample}_{wildcards.segment}.txt"
+    shell:
+        """
+        cd {params.working_dir}
+        aBayesQR abayesqr_config.txt > {log} 2>&1
+
+        # Make the output of aBayesQR FASTA format
+        awk 'NR % 2 == 1 { print ">" $0 } NR % 2 == 0 { print $0 }' abayesqr_ViralSeq.txt \
+            > abayesqr_ViralSeq.fasta
+        """
