@@ -348,7 +348,7 @@ rule trim_fastq:
             for pair in ("paired", "unpaired")
         ]
     log:
-        ".logs/qsr/trim_{wildcards.sample}.txt"
+        ".logs/qsr/trim_{sample}.txt"
     shell:
         "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 2> {log}"
 
@@ -361,7 +361,7 @@ rule align_unfiltered_to_segment:
     output:
         "results/qsr/{sample}/{segment}/aligned.sam"
     log:
-        ".logs/qsr/minimap2_{wildcards.sample}_{wildcards.segment}.txt"
+        ".logs/qsr/minimap2_{sample}_{segment}.txt"
     shell:
         "minimap2 -ax sr {input} > {output} 2> {log}"
 
@@ -384,7 +384,7 @@ rule abayes_qsr:
     params:
         working_dir="results/qsr/{wildcards.sample}/{wildcards.segment}"
     log:
-        ".logs/qsr/aBayesQr_{wildcards.sample}_{wildcards.segment}.txt"
+        ".logs/qsr/aBayesQr_{sample}_{segment}.txt"
     shell:
         """
         cd {params.working_dir}
