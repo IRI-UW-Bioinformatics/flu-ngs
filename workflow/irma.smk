@@ -347,7 +347,7 @@ rule trim_fastq:
             for pair in ("paired", "unpaired")
         ]
     log:
-        ".logs/qsr/trim_{wildcards.sample}.txt"
+        ".logs/qsr/trim_{wildcards.sample}_{wildcards.n}_{wildcards.pair}.txt"
     shell:
         "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 2> {log}"
 
