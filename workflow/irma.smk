@@ -339,7 +339,8 @@ rule order_columns:
 
 rule trim_fastq:
     input:
-        "raw/{sample}/{sample}_{n}.fastq"
+        "raw/{sample}/{sample}_1.fastq",
+        "raw/{sample}/{sample}_2.fastq"
     output:
         [
             f".processed_reads_qsr/{{sample}}/{{sample}}_{n}_{pair}.fastq"
