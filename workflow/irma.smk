@@ -391,6 +391,15 @@ rule abayes_qsr:
         aBayesQR abayesqr_config.txt > .abayesqr_log.txt 2>&1
 
         # Make the output of aBayesQR FASTA format
-        awk 'NR % 2 == 1 {{ print ">" $0 }} NR % 2 == 0 {{ print $0 }}' abayesqr_ViralSeq.txt \
-            > abayesqr_ViralSeq.fasta
+        # Add the segment this is from
+        awk 'NR % 2 == 1 {{ print ">{segment}" $0 }} NR % 2 == 0 {{ print $0 }}' \
+            abayesqr_ViralSeq.txt > abayesqr_ViralSeq.fasta
         """
+
+rule abayes_qsr_all_segments:
+    input:
+        collect_segments("results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta")
+    output:
+        "results/qsr/{sample}/{sample}_abayesqr.fasta"
+    shell:
+        "cat {input} > {output}"
