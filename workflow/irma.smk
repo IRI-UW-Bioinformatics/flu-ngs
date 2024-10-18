@@ -199,6 +199,7 @@ def collect_segments(path, default_wildcards=None):
             the path that is passed doesn't contain wildcards that are necessary for finding the
             IRMA output.
     """
+    default_wildcards = {} if default_wildcards is None else default_wildcards
 
     def fun(wildcards):
         """
@@ -206,7 +207,6 @@ def collect_segments(path, default_wildcards=None):
         """
         irma_dir = checkpoints.find_irma_output.get(**wildcards, **default_wildcards).output[0]
         segments = [path.stem for path in Path(irma_dir).glob("*.vcf")]
-        default_wildcards = {} if default_wildcards is None else default_wildcards
         return expand(path, segment=segments, **wildcards)
 
     return fun
