@@ -339,8 +339,8 @@ rule order_columns:
 
 rule trim_fastq:
     input:
-        "raw/{sample}/{sample}_1.fastq",
-        "raw/{sample}/{sample}_2.fastq"
+        "raw/{sample}/{sample}_1.fastq.gz",
+        "raw/{sample}/{sample}_2.fastq.gz"
     output:
         [
             f".processed_reads_qsr/{{sample}}/{{sample}}_{n}_{pair}.fastq"
@@ -355,7 +355,7 @@ rule trim_fastq:
 
 rule align_unfiltered_to_segment:
     input:
-        "results/primary/seq/{sample}_combined/separate/{segment}-nt.fasta",
+        "results/primary/irma/{sample}_combined/{segment}.fasta",
         ".processed_reads_qsr/{sample}/{sample}_1_paired.fastq",
         ".processed_reads_qsr/{sample}/{sample}_2_paired.fastq"
     output:
@@ -368,13 +368,13 @@ rule align_unfiltered_to_segment:
 
 rule make_abayesqr_config:
     input:
-        fasta="results/primary/seq/{sample}_paired/separate/{segment}-nt.fasta",
+        fasta="results/primary/irma/{sample}_combined/{segment}.fasta",
         sam="results/qsr/{sample}/{segment}/aligned.sam"
     output:
         "results/qsr/{sample}/{segment}/abayesqr_config.txt"
     shell:
         # aBayesQR needs just the filename of the sam and fasta files, not their whole paths
-        "workflow/scripts/make-abayesqr-config.py --fasta {wildcards.segment}-nt.fasta --sam aligned.sam > {output}"
+        "workflow/scripts/make-abayesqr-config.py --fasta {input.fasta} --sam aligned.sam > {output}"
 
 
 rule abayes_qsr:
@@ -384,15 +384,13 @@ rule abayes_qsr:
     output:
         "results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{wildcards.sample}/{wildcards.segment}"
-    log:
-        ".logs/qsr/aBayesQr_{sample}_{segment}.txt"
+        working_dir="results/qsr/{sample}/{segment}"
     shell:
         """
         cd {params.working_dir}
-        aBayesQR abayesqr_config.txt > {log} 2>&1
+        aBayesQR abayesqr_config.txt > .abayesqr_log.txt 2>&1
 
         # Make the output of aBayesQR FASTA format
-        awk 'NR % 2 == 1 { print ">" $0 } NR % 2 == 0 { print $0 }' abayesqr_ViralSeq.txt \
+        awk 'NR % 2 == 1 {{ print ">" $0 }} NR % 2 == 0 {{ print $0 }}' abayesqr_ViralSeq.txt \
             > abayesqr_ViralSeq.fasta
         """
