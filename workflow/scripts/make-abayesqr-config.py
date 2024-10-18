@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 import argparse
-from Bio.SeqIO import SeqIO
+from Bio.SeqIO import parse
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser("make-abayessqr-config.py")
-    parser.add_argument("--fasta", help="Path to fasta reference file.")
-    parser.add_argument("--sam", help="Path to .sam format aligned reads.")
+    parser = argparse.ArgumentParser("make-abayesqr-config.py")
+    parser.add_argument(
+        "--fasta",
+        help="Path to fasta reference file. N.B. only the filename will be included in the config "
+        "- aBayesQR must be called from the same directory as the data.",
+        required=True,
+    )
+    parser.add_argument(
+        "--sam", help="Path to .sam format aligned reads.", required=True
+    )
     args = parser.parse_args()
 
     with open(args.fasta, "r") as fobj:
-        record = next(SeqIO.parse(fobj, format="fasta"))
+        record = next(parse(fobj, format="fasta"))
 
-    config = f"""filename of reference sequence (FASTA) : {args.fasta}
+    filename = Path(args.fasta).name
+
+    config = f"""filename of reference sequence (FASTA) : {filename}
     filname of the aligned reads (sam format) : {args.sam}
     paired-end (1 = true, 0 = false) : 1
     SNV_thres : 0.05
