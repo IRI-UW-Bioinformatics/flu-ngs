@@ -1,4 +1,4 @@
-from typing import Callable
+from pathlib import Path
 from snakemake.utils import validate, min_version
 
 min_version("7.0.4")
@@ -22,6 +22,12 @@ def expand_sample_pair_order(path):
     )
 
 
+def qsr_files(wildcards):
+   "Helper function that adds QSR sequences to targets if the config asks for them."
+   if config["qsr"]:
+       return expand("results/qsr/{sample}/{sample}_abayesqr.fasta", sample=config["samples"])
+
+
 rule all:
     input:
         expand_order("results/{order}/xlsx/variants-mcc-by-sample-ordered.xlsx"),
@@ -29,6 +35,7 @@ rule all:
         expand_order("results/{order}/xlsx/variants-mcc-flat-ordered.xlsx"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
+        qsr_files
 
 
 wildcard_constraints:
@@ -179,7 +186,7 @@ rule multiple_changes_in_codon:
         "workflow/scripts/multiple-changes-in-codon.py < {input} > {output}"
 
 
-def collect_segments(path):
+def collect_segments(path, default_wildcards=None):
     """
     Returns a function which make a list of files containing segment names, based on
     segments that IRMA has found.
@@ -188,14 +195,18 @@ def collect_segments(path):
         path (str): What file names should look like. It should contain
             {segment} (which is expanded based on what segments IRMA finds), and can
             contain {sample} and {pair} (which are expanded based on wildcards).
+        default_wildcards (dict): Optional default wildcardds to pass to expand. This is useful if
+            the path that is passed doesn't contain wildcards that are necessary for finding the
+            IRMA output.
     """
 
     def fun(wildcards):
         """
         Make a list of files containing segment names, based on segments that IRMA has found.
         """
-        irma_dir = checkpoints.find_irma_output.get(**wildcards).output[0]
-        segments = [file[:-4] for file in os.listdir(irma_dir) if file.endswith(".vcf")]
+        irma_dir = checkpoints.find_irma_output.get(**wildcards, **default_wildcards).output[0]
+        segments = [path.stem for path in Path(irma_dir).glob("*.vcf")]
+        default_wildcards = {} if default_wildcards is None else default_wildcards
         return expand(path, segment=segments, **wildcards)
 
     return fun
@@ -392,13 +403,16 @@ rule abayes_qsr:
 
         # Make the output of aBayesQR FASTA format
         # Add the segment this is from
-        awk 'NR % 2 == 1 {{ print ">{segment}" $0 }} NR % 2 == 0 {{ print $0 }}' \
+        awk 'NR % 2 == 1 {{ print ">{wildcards.segment} " $0 }} NR % 2 == 0 {{ print $0 }}' \
             abayesqr_ViralSeq.txt > abayesqr_ViralSeq.fasta
         """
 
 rule abayes_qsr_all_segments:
     input:
-        collect_segments("results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta")
+        collect_segments(
+            "results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta",
+            default_wildcards=dict(order="primary", pair="paired")
+        )
     output:
         "results/qsr/{sample}/{sample}_abayesqr.fasta"
     shell:
