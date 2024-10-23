@@ -403,8 +403,12 @@ rule abayes_qsr:
 
         # Make the output of aBayesQR FASTA format
         # Add the segment this is from
-        awk 'NR % 2 == 1 {{ print ">{wildcards.segment} " $0 }} NR % 2 == 0 {{ print $0 }}' \
-            abayesqr_ViralSeq.txt > abayesqr_ViralSeq.fasta
+        if [ -f abayesqr_ViralSeq.txt ]; then
+            awk 'NR % 2 == 1 {{ print ">{wildcards.segment} " $0 }} NR % 2 == 0 {{ print $0 }}' \
+                abayesqr_ViralSeq.txt > abayesqr_ViralSeq.fasta
+        else
+            touch abayesqr_ViralSeq.fasta
+        fi
         """
 
 rule abayes_qsr_all_segments:
