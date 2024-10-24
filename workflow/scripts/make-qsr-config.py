@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 import argparse
 from Bio.SeqIO import parse
 
@@ -91,4 +92,9 @@ if __name__ == "__main__":
 
     template = {"abayesqr": ABAYESQR_TEMPLATE, "tensqr": TENSQR_TEMPLATE}[args.type]
 
-    print(template.format(length=len(record.seq), **vars(args)), end="")
+    print(
+        template.format(
+            length=len(record.seq), **vars(args), fasta=Path(args.fasta).name
+        ),
+        end="",
+    )
