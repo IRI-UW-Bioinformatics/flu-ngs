@@ -92,14 +92,12 @@ if __name__ == "__main__":
 
     template = {"abayesqr": ABAYESQR_TEMPLATE, "tensqr": TENSQR_TEMPLATE}[args.type]
 
-    fasta_name = Path(args.fasta).name
+    kwds = vars(args)
 
+    # Remove fasta path from kwds and pass just the filename to the template
+    fasta_path = kwds.pop("fasta")
+    fasta_name = Path(args.fasta).name
     print(
-        template.format(
-            length=len(record.seq),
-            fasta=fasta_name,
-            # Remove fasta path so that just the fasta name appears:
-            **vars(args).pop("fasta"),
-        ),
+        template.format(length=len(record.seq), fasta=fasta_name, **kwds),
         end="",
     )
