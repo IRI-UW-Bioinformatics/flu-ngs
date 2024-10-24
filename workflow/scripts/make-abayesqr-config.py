@@ -1,42 +1,94 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import argparse
 from Bio.SeqIO import parse
 
-TEMPLATE = """filename of reference sequence (FASTA) : {fasta}
+ABAYESQR_TEMPLATE = """filename of reference sequence (FASTA) : {fasta}
 filname of the aligned reads (sam format) : {sam}
-paired-end (1 = true, 0 = false) : 1
-SNV_thres : 0.05
+paired-end (1 = true, 0 = false) : {paired_end}
+SNV_thres : {snv_thresh}
 reconstruction_start : 1
 reconstruction_stop: {length}
-min_mapping_qual : 60
-min_read_length : 100
-max_insert_length : 10
-characteristic zone name : abayesqr
-seq_err (assumed sequencing error rate(%)) : 0.1
+min_mapping_qual : {min_mapping_qual}
+min_read_length : {min_read_length}
+max_insert_length : {max_insert_length}
+characteristic zone name : {prefix}
+seq_err (assumed sequencing error rate(%)) : {seq_err}
 MEC improvement threshold : 0.0395"""
 
-if __name__ == "__main__":
+TENSQR_TEMPLATE = """filename of reference sequence (FASTA) : {fasta}
+filname of the aligned reads (sam format) : {sam}
+SNV_thres : {snv_thresh}
+reconstruction_start : 1
+reconstruction_stop: {length}
+min_mapping_qual : {min_mapping_qual}
+min_read_length : {min_read_length}
+max_insert_length : {max_insert_length}
+characteristic zone name : {prefix}
+seq_err (assumed sequencing error rate(%)) : {seq_err}
+MEC improvement threshold : 0.0312
+initial population size : 5"""
 
-    parser = argparse.ArgumentParser("make-abayesqr-config.py")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        "make-qsr-config.py",
+        description="Make a config file for running a Quasispecies Spectrum Reconstruction (QSR) "
+        "program (TenSQR or aBayesQR).",
+    )
+    parser.add_argument("--type", choices=["abayesqr", "tensqr"], required=True)
     parser.add_argument(
         "--fasta",
-        help="Path to fasta reference file. N.B. only the filename will be included in the config "
-        "- aBayesQR must be called from the same directory as the data.",
+        help=(
+            "Path to fasta reference file. Only the filename is included in the config (TenSQR "
+            "and aBayesQR both dump output in the directory they're called from). The fasta file "
+            "is required to read the length of the reference that is passed into the config. The "
+            "first record in this file is used as the reference."
+        ),
         required=True,
     )
     parser.add_argument(
         "--sam", help="Path to .sam format aligned reads.", required=True
+    )
+    parser.add_argument(
+        "--prefix", help="Prefix appended to output files.", required=True
+    )
+    parser.add_argument(
+        "--paired_end",
+        help="0/1 for False/True. Only used by aBayesQR. Default=1.",
+        default=1,
+    )
+    parser.add_argument(
+        "--min_read_length", help="Default=100", default=100, required=False
+    )
+    parser.add_argument(
+        "--max_insert_length",
+        help="Maximum length of insertions allowed. Default=100",
+        default=100,
+        required=False,
+    )
+    parser.add_argument(
+        "--seq_err", default=0.2, help="Assumed sequencing error rate (%). Default=0.2."
+    )
+    parser.add_argument(
+        "--min_mapping_qual",
+        default=40,
+        help="Minimum read mapping quality. Default=40.",
+    )
+    parser.add_argument(
+        "--snv_thresh",
+        default=0.01,
+        help=(
+            "Single nucleotide variant threshold. I don't know exactly how this parameter is used "
+            "by aBayesQR or TenSQR. Perhaps SNVs below this threshold are not considered when "
+            "reconstructing haplotypes?"
+        ),
     )
     args = parser.parse_args()
 
     with open(args.fasta, "r") as fobj:
         record = next(parse(fobj, format="fasta"))
 
-    print(
-        TEMPLATE.format(
-            fasta=Path(args.fasta).name, sam=args.sam, length=len(record.seq)
-        ),
-        end="",
-    )
+    template = {"abayesqr": ABAYESQR_TEMPLATE, "tensqr": TENSQR_TEMPLATE}[args.type]
+
+    print(template.format(length=len(record.seq), **vars(args)), end="")
