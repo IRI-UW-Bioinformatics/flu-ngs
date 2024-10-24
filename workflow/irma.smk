@@ -24,10 +24,11 @@ def expand_sample_pair_order(path):
 
 def qsr_files(wildcards):
     "Helper function that adds QSR sequences to targets if the config asks for them."
-    files = []
-    for qsr_type in config["qsr"]:
-        files += expand("results/qsr/{sample}/{sample}_{qsr_type}.fasta", sample=config["samples"])
-    return files
+    return expand(
+        "results/qsr/{sample}/{sample}_{qsr_type}.fasta",
+        sample=config["samples"],
+        qsr_type=config["qsr"]
+    )
 
 
 rule all:
@@ -432,7 +433,7 @@ rule run_tensqr:
         """
         cd {params.working_dir}
         ExtractMatrix tensqr_config.txt > .tensqr_extractmatrix_log.txt 2>&1
-        TenSQR.py tensqr_config.txt > .tensqr_log.txt 2>&1
+        TenSQR.py --zone_name tensqr > .tensqr_log.txt 2>&1
 
         # Make the output of tensqr FASTA format
         # Add the segment this is from
