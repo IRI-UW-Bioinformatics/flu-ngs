@@ -23,9 +23,11 @@ def expand_sample_pair_order(path):
 
 
 def qsr_files(wildcards):
-   "Helper function that adds QSR sequences to targets if the config asks for them."
-   if config["qsr"]:
-       return expand("results/qsr/{sample}/{sample}_abayesqr.fasta", sample=config["samples"])
+    "Helper function that adds QSR sequences to targets if the config asks for them."
+    files = []
+    for qsr_type in config["qsr"]:
+        files += expand("results/qsr/{sample}/{sample}_{qsr_type}.fasta", sample=config["samples"])
+    return files
 
 
 rule all:
@@ -42,6 +44,7 @@ wildcard_constraints:
     n="1|2",
     pair="(paired)|(combined)|(longread)",
     order="(primary)|(secondary)",
+    qsr_type="(abayesqsr)|(tensqr)"
 
 
 include: f"rules/irma_{config['platform']}.smk"
@@ -377,18 +380,23 @@ rule align_unfiltered_to_segment:
         "minimap2 -ax sr {input} > {output} 2> {log}"
 
 
-rule make_abayesqr_config:
+rule make_qsr_config:
     input:
         fasta="results/primary/irma/{sample}_combined/{segment}.fasta",
         sam="results/qsr/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{sample}/{segment}/abayesqr_config.txt"
+        "results/qsr/{sample}/{segment}/{qsr_type}_config.txt"
     shell:
-        # aBayesQR needs just the filename of the sam and fasta files, not their whole paths
-        "workflow/scripts/make-abayesqr-config.py --fasta {input.fasta} --sam aligned.sam > {output}"
+        """
+        workflow/scripts/make-qsr-config.py \
+            --type {wildcards.qsr_type} \
+            --fasta {input.fasta} \
+            --sam aligned.sam \
+            --prefix {wildcards.qsr_type} > {output}
+        """
 
 
-rule abayes_qsr:
+rule run_abayesqr:
     input:
         "results/qsr/{sample}/{segment}/abayesqr_config.txt",
         "results/qsr/{sample}/{segment}/aligned.sam"
@@ -411,13 +419,39 @@ rule abayes_qsr:
         fi
         """
 
-rule abayes_qsr_all_segments:
+
+rule run_tensqr:
+    input:
+        "results/qsr/{sample}/{segment}/tensqr_config.txt",
+        "results/qsr/{sample}/{segment}/aligned.sam"
+    output:
+        "results/qsr/{sample}/{segment}/tensqr_ViralSeq.fasta"
+    params:
+        working_dir="results/qsr/{sample}/{segment}"
+    shell:
+        """
+        cd {params.working_dir}
+        ExtractMatrix tensqr_config.txt > .tensqr_extractmatrix_log.txt 2>&1
+        TenSQR.py tensqr_config.txt > .tensqr_log.txt 2>&1
+
+        # Make the output of tensqr FASTA format
+        # Add the segment this is from
+        if [ -f tensqr_ViralSeq.txt ]; then
+            awk 'NR % 2 == 1 {{ print ">{wildcards.segment} " $0 }} NR % 2 == 0 {{ print $0 }}' \
+                tensqr_ViralSeq.txt > tensqr_ViralSeq.fasta
+        else
+            touch tensqr_ViralSeq.fasta
+        fi
+        """
+
+
+rule collect_qsr_sequences_for_all_segments:
     input:
         collect_segments(
-            "results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta",
+            "results/qsr/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
             default_wildcards=dict(order="primary", pair="paired")
         )
     output:
-        "results/qsr/{sample}/{sample}_abayesqr.fasta"
+        "results/qsr/{sample}/{sample}_{qsr_type}.fasta"
     shell:
         "cat {input} > {output}"
