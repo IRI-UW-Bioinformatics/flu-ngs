@@ -15,9 +15,7 @@ rule irma_raw:
     threads:
         # take all threads to stop multiple instances of this rule fighting for threads
         workflow.cores
+    params:
+        config="workflow/config/FLU-{order}-iri-minion.sh"
     shell:
-        """
-        IRMA \
-            --external-config workflow/config/FLU-{wildcards.order}-iri-minion.sh \
-            FLU {input} {output} > {log}
-        """
+        "IRMA --external-config {params.config} FLU {input} {output} > {log}"

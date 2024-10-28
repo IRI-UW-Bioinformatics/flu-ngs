@@ -14,9 +14,7 @@ rule irma_raw:
         "../envs/irma.yaml"
     threads:
         4  # Feel free to set higher if you don't have many samples
+    params:
+        config="workflow/config/FLU-{order}-iri.sh"
     shell:
-        """
-        IRMA \
-            --external-config workflow/config/FLU-{wildcards.order}-iri.sh \
-            FLU {input} {output} > {log}
-        """
+        "IRMA --external-config {params.config} FLU {input} {output} > {log}"
