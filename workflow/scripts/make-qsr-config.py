@@ -60,7 +60,7 @@ if __name__ == "__main__":
         default=1,
     )
     parser.add_argument(
-        "--min_read_length", help="Default=100", default=100, required=False
+        "--min_read_length", help="Default=125", default=125, required=False
     )
     parser.add_argument(
         "--max_insert_length",
@@ -73,8 +73,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--min_mapping_qual",
-        default=40,
-        help="Minimum read mapping quality. Default=40.",
+        default=30,
+        help="Minimum read mapping quality. Default=30.",
     )
     parser.add_argument(
         "--snv_thresh",
