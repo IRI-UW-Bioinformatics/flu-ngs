@@ -12,6 +12,12 @@ rule irma_raw:
         ".logs/irma-{order}-raw/{sample}_{pair}.log",
     conda:
         "../envs/irma.yaml"
-    threads: workflow.cores  # take all threads to stop multiple instances of this rule fighting for threads
+    threads:
+        # take all threads to stop multiple instances of this rule fighting for threads
+        workflow.cores
     shell:
-        "IRMA FLU-{wildcards.order}-iri-minion {input} {output} > {log}"
+        """
+        IRMA \
+            --external-config workflow/config/FLU-{wildcards.order}-iri-minion.sh \
+            FLU {input} {output} > {log}
+        """

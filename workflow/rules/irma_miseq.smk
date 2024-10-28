@@ -15,4 +15,8 @@ rule irma_raw:
     threads:
         4  # Feel free to set higher if you don't have many samples
     shell:
-        "IRMA FLU-{wildcards.order}-iri {input} {output} > {log}"
+        """
+        IRMA \
+            --external-config workflow/config/FLU-{wildcards.order}-iri.sh \
+            FLU {input} {output} > {log}
+        """
