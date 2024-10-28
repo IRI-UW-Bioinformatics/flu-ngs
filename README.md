@@ -32,7 +32,6 @@ These workflows call various other bioinformatics programs:
   adapters off reads.
 - [IRMA](https://wonder.cdc.gov/amd/flu/irma/) is used to match reads to flu
   reference sequences.
-    - **Important**. This workflow uses a custom configuration script. Copy the `.sh` files in `workflow/config` to the `<IRMA install path>/IRMA_RES/modules/FLU/config/` directory.
 - [VEP](https://grch37.ensembl.org/info/docs/tools/vep/index.html) is used to
   identify effect of nucleotide changes at the protein level.
   - VEP is written in Perl and requires a module called `Bundle::DBI`. Install it
