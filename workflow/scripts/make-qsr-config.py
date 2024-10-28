@@ -69,7 +69,9 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
-        "--seq_err", default=0.2, help="Assumed sequencing error rate (%). Default=0.2."
+        "--seq_err",
+        default=0.2,
+        help="Assumed sequencing error rate (percent) Default=0.2.",
     )
     parser.add_argument(
         "--min_mapping_qual",
@@ -96,7 +98,7 @@ if __name__ == "__main__":
 
     # Remove fasta path from kwds and pass just the filename to the template
     fasta_path = kwds.pop("fasta")
-    fasta_name = Path(args.fasta).name
+    fasta_name = Path(fasta_path).name
     print(
         template.format(length=len(record.seq), fasta=fasta_name, **kwds),
         end="",
