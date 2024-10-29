@@ -352,27 +352,11 @@ rule order_columns:
         """
 
 
-rule trim_fastq:
-    input:
-        "raw/{sample}/{sample}_1.fastq.gz",
-        "raw/{sample}/{sample}_2.fastq.gz"
-    output:
-        [
-            f".processed_reads_qsr/{{sample}}/{{sample}}_{n}_{pair}.fastq"
-            for n in (1, 2)
-            for pair in ("paired", "unpaired")
-        ]
-    log:
-        ".logs/qsr/trim_{sample}.txt"
-    shell:
-        "TrimmomaticPE {input} {output} ILLUMINACLIP:raw/trimlog.fas:2:30:10:2 MINLEN:36 2> {log}"
-
-
 rule align_unfiltered_to_segment:
     input:
         "results/primary/irma/{sample}_combined/{segment}.fasta",
-        ".processed_reads_qsr/{sample}/{sample}_1_paired.fastq",
-        ".processed_reads_qsr/{sample}/{sample}_2_paired.fastq"
+        "processed_reads/{sample}/{sample}_1_paired.fastq",
+        "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
         "results/qsr/{sample}/{segment}/aligned.sam"
     log:
