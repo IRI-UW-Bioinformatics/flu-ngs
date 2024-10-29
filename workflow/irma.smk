@@ -354,7 +354,7 @@ rule order_columns:
 
 rule align_unfiltered_to_segment:
     input:
-        "results/primary/irma/{sample}_combined/{segment}.fasta",
+        "results/primary/irma-raw/{sample}_paired/{segment}.fasta",
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
@@ -367,7 +367,7 @@ rule align_unfiltered_to_segment:
 
 rule make_qsr_config:
     input:
-        fasta="results/primary/irma/{sample}_combined/{segment}.fasta",
+        fasta="results/primary/irma/{sample}_paired/{segment}.fasta",
         sam="results/qsr/{sample}/{segment}/aligned.sam"
     output:
         "results/qsr/{sample}/{segment}/{qsr_type}_config.txt"
