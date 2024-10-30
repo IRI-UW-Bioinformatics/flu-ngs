@@ -425,26 +425,21 @@ rule run_tensqr:
             TenSQR.py --zone_name tensqr > .tensqr_log.txt 2>&1
             exit_code=$?
 
-            if [ -f tensqr_ViralSeq.txt ]; then
-                # Make tensqr output FASTA format
-                awk 'NR % 2 == 1 {{ print ">{wildcards.segment} " $0 }} NR % 2 == 0 {{ print $0 }}' \
-                    tensqr_ViralSeq.txt > tensqr_ViralSeq.fasta
-
-            elif [ $exit_code -ne 0 ]; then
+            if [ $exit_code -ne 0 ]; then
                 echo "TenSQR.py threw an error." >> .tensqr_log.txt
-                echo "Made empty tensqr_ViralSeq.fasta." >> .tensqr_log.txt
+                echo "Making empty tensqr_ViralSeq.fasta." >> .tensqr_log.txt
                 touch tensqr_ViralSeq.fasta
 
-            else
-                echo "TenSQR.py exited cleanly but didn't make tensqr_ViralSeq.txt." >> .tensqr_log.txt
-                echo "Made empty tensqr_ViralSeq.fasta." >> .tensqr_log.txt
+            elif [ ! -f tensqr_ViralSeq.fasta ]; then
+                echo "TenSQR.py exited cleanly but didn't make tensqr_ViralSeq.fasta." >> .tensqr_log.txt
+                echo "Making empty tensqr_ViralSeq.fasta." >> .tensqr_log.txt
                 touch tensqr_ViralSeq.fasta
 
             fi
 
         else
             echo "No SNVs (ExtractMatrix produced empty tensqr_SNV_matrix.txt) so TenSQR wasn't run." >> .tensqr_log.txt
-            echo "Made empty tensqr_ViralSeq.fasta." >> .tensqr_log.txt
+            echo "Making empty tensqr_ViralSeq.fasta." >> .tensqr_log.txt
             touch tensqr_ViralSeq.fasta
 
         fi
