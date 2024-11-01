@@ -358,7 +358,7 @@ rule align_unfiltered_to_segment:
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
-        "results/qsr/{sample}/{segment}/aligned.sam"
+        temp("results/qsr/{sample}/{segment}/aligned.sam")
     log:
         ".logs/qsr/minimap2_{sample}_{segment}.txt"
     shell:
