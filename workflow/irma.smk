@@ -30,7 +30,7 @@ rule all:
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
         expand(
-            "results/qsr/{order}/{pair}/{sample}/{sample}_{qsr_type}.fasta",
+            "results/qsr/{order}/{pair}/{sample}/{qsr_type}_ViralSeq.fasta",
             pair=config["pair"],
             sample=config["samples"],
             qsr_type=config["qsr"],
