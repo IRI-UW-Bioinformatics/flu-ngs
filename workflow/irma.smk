@@ -30,11 +30,10 @@ rule all:
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
         expand(
-            "results/qsr/{order}/{pair}/{sample}/{qsr_type}_ViralSeq.fasta",
-            pair=config["pair"],
+            "results/qsr/{order}/{sample}/{qsr_type}_ViralSeq.fasta",
+            order=config["order"],
             sample=config["samples"],
             qsr_type=config["qsr"],
-            order=config["order"]
         )
 
 
@@ -403,9 +402,9 @@ rule minimap_combined:
 rule make_qsr_config:
     input:
         fasta="results/{order}/irma/{sample}_{pair}/{segment}.fasta",
-        sam="results/qsr/{order}/{pair}/{sample}/{segment}/aligned.sam"
+        sam="results/qsr/{order}/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{order}/{pair}/{sample}/{segment}/{qsr_type}_config.txt"
+        "results/qsr/{order}/{sample}/{segment}/{qsr_type}_config.txt"
     shell:
         """
         workflow/scripts/make-qsr-config.py \
@@ -418,12 +417,12 @@ rule make_qsr_config:
 
 rule run_abayesqr:
     input:
-        "results/qsr/{order}/{pair}/{sample}/{segment}/abayesqr_config.txt",
-        "results/qsr/{order}/{pair}/{sample}/{segment}/aligned.sam"
+        "results/qsr/{order}/{sample}/{segment}/abayesqr_config.txt",
+        "results/qsr/{order}/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{order}/{pair}/{sample}/{segment}/abayesqr_ViralSeq.fasta"
+        "results/qsr/{order}/{sample}/{segment}/abayesqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{order}/{pair}/{sample}/{segment}"
+        working_dir="results/qsr/{order}/{sample}/{segment}"
     shell:
         """
         cd {params.working_dir}
@@ -442,12 +441,12 @@ rule run_abayesqr:
 
 rule run_tensqr:
     input:
-        "results/qsr/{order}/{pair}/{sample}/{segment}/tensqr_config.txt",
-        "results/qsr/{order}/{pair}/{sample}/{segment}/aligned.sam"
+        "results/qsr/{order}/{sample}/{segment}/tensqr_config.txt",
+        "results/qsr/{order}/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{order}/{pair}/{sample}/{segment}/tensqr_ViralSeq.fasta"
+        "results/qsr/{order}/{sample}/{segment}/tensqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{order}/{pair}/{sample}/{segment}"
+        working_dir="results/qsr/{order}/{sample}/{segment}"
     shell:
         """
         cd {params.working_dir}
@@ -484,9 +483,9 @@ rule run_tensqr:
 rule collect_qsr_sequences_for_all_segments:
     input:
         collect_segments(
-            "results/qsr/{order}/{pair}/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
+            "results/qsr/{order}/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
         )
     output:
-        "results/qsr/{order}/{pair}/{sample}/{qsr_type}_ViralSeq.fasta"
+        "results/qsr/{order}/{sample}/{qsr_type}_ViralSeq.fasta"
     shell:
         "cat {input} > {output}"
