@@ -487,6 +487,6 @@ rule collect_qsr_sequences_for_all_segments:
             "results/qsr/{order}/{pair}/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
         )
     output:
-        "results/qsr/{order}/{sample}/{sample}_{qsr_type}.fasta"
+        "results/qsr/{order}/{pair}/{sample}/{qsr_type}_ViralSeq.fasta"
     shell:
         "cat {input} > {output}"
