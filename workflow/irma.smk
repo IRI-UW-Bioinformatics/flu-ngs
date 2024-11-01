@@ -484,6 +484,7 @@ rule collect_qsr_sequences_for_all_segments:
     input:
         collect_segments(
             "results/qsr/{order}/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
+            default_wildcards=dict(pair="combined")
         )
     output:
         "results/qsr/{order}/{sample}/{qsr_type}_ViralSeq.fasta"
