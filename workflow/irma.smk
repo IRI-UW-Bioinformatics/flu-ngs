@@ -402,7 +402,7 @@ rule minimap_combined:
 rule make_qsr_config:
     input:
         fasta="results/{order}/irma/{sample}_{pair}/{segment}.fasta",
-        sam="results/qsr/{order}/{sample}/{segment}/aligned.sam"
+        sam="results/qsr/{order}/combined/{sample}/{segment}/aligned.sam"
     output:
         "results/qsr/{order}/{sample}/{segment}/{qsr_type}_config.txt"
     shell:
