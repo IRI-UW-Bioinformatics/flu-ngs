@@ -22,15 +22,6 @@ def expand_sample_pair_order(path):
     )
 
 
-def qsr_files(wildcards):
-    "Helper function that adds QSR sequences to targets if the config asks for them."
-    return expand(
-        "results/qsr/{sample}/{sample}_{qsr_type}.fasta",
-        sample=config["samples"],
-        qsr_type=config["qsr"]
-    )
-
-
 rule all:
     input:
         expand_order("results/{order}/xlsx/variants-mcc-by-sample-ordered.xlsx"),
@@ -38,7 +29,12 @@ rule all:
         expand_order("results/{order}/xlsx/variants-mcc-flat-ordered.xlsx"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
-        qsr_files
+        expand(
+           "results/qsr/{order}/{sample}/{sample}_{qsr_type}.fasta",
+            sample=config["samples"],
+            qsr_type=config["qsr"],
+            order=config["order"]
+        )
 
 
 wildcard_constraints:
@@ -354,11 +350,11 @@ rule order_columns:
 
 rule align_unfiltered_to_segment:
     input:
-        "results/primary/irma-raw/{sample}_paired/{segment}.fasta",
+        "results/{order}/irma-raw/{sample}_paired/{segment}.fasta",
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
-        temp("results/qsr/{sample}/{segment}/aligned.sam")
+        temp("results/qsr/{order}/{sample}/{segment}/aligned.sam")
     log:
         ".logs/qsr/minimap2_{sample}_{segment}.txt"
     shell:
@@ -367,10 +363,10 @@ rule align_unfiltered_to_segment:
 
 rule make_qsr_config:
     input:
-        fasta="results/primary/irma/{sample}_paired/{segment}.fasta",
-        sam="results/qsr/{sample}/{segment}/aligned.sam"
+        fasta="results/{order}/irma/{sample}_paired/{segment}.fasta",
+        sam="results/qsr/{order}/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{sample}/{segment}/{qsr_type}_config.txt"
+        "results/qsr/{order}/{sample}/{segment}/{qsr_type}_config.txt"
     shell:
         """
         workflow/scripts/make-qsr-config.py \
@@ -383,12 +379,12 @@ rule make_qsr_config:
 
 rule run_abayesqr:
     input:
-        "results/qsr/{sample}/{segment}/abayesqr_config.txt",
-        "results/qsr/{sample}/{segment}/aligned.sam"
+        "results/qsr/{order}/{sample}/{segment}/abayesqr_config.txt",
+        "results/qsr/{order}/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta"
+        "results/qsr/{order}/{sample}/{segment}/abayesqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{sample}/{segment}"
+        working_dir="results/qsr/{order}/{sample}/{segment}"
     shell:
         """
         cd {params.working_dir}
@@ -407,12 +403,12 @@ rule run_abayesqr:
 
 rule run_tensqr:
     input:
-        "results/qsr/{sample}/{segment}/tensqr_config.txt",
-        "results/qsr/{sample}/{segment}/aligned.sam"
+        "results/qsr/{order}/{sample}/{segment}/tensqr_config.txt",
+        "results/qsr/{order}/{sample}/{segment}/aligned.sam"
     output:
-        "results/qsr/{sample}/{segment}/tensqr_ViralSeq.fasta"
+        "results/qsr/{order}/{sample}/{segment}/tensqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{sample}/{segment}"
+        working_dir="results/qsr/{order}/{sample}/{segment}"
     shell:
         """
         cd {params.working_dir}
@@ -449,10 +445,10 @@ rule run_tensqr:
 rule collect_qsr_sequences_for_all_segments:
     input:
         collect_segments(
-            "results/qsr/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
-            default_wildcards=dict(order="primary", pair="paired")
+            "results/qsr/{order}/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
+            default_wildcards=dict(pair="paired")
         )
     output:
-        "results/qsr/{sample}/{sample}_{qsr_type}.fasta"
+        "results/qsr/{order}/{sample}/{sample}_{qsr_type}.fasta"
     shell:
         "cat {input} > {output}"
