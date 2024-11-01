@@ -30,7 +30,8 @@ rule all:
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
         expand(
-           "results/qsr/{order}/{sample}/{sample}_{qsr_type}.fasta",
+            "results/qsr/{order}/{pair}/{sample}/{sample}_{qsr_type}.fasta",
+            pair=config["pair"],
             sample=config["samples"],
             qsr_type=config["qsr"],
             order=config["order"]
@@ -368,9 +369,10 @@ rule minimap_unpaired:
     input:
         "results/{order}/irma-raw/{sample}_combined/{segment}.fasta"
         "processed_reads/{sample}/{sample}_unpaired.fastq"
-    output: temp("results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam")
+    output:
+        temp("results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam")
     log:
-        ".logs/qsr/minimap2_unpaired_{sample}_{segment}.txt"
+        ".logs/qsr/minimap2_{order}_unpaired_{sample}_{segment}.txt"
     shell:
         "minimap2 -ax sr {input} > {output} 2> {log}"
 
@@ -380,9 +382,10 @@ rule minimap_paired:
         "results/{order}/irma-raw/{sample}_paired/{segment}.fasta"
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
-    output: temp("results/qsr/{order}/paired/{sample}/{segment}/aligned.sam")
+    output:
+        temp("results/qsr/{order}/paired/{sample}/{segment}/aligned.sam")
     log:
-        ".logs/qsr/minimap2_paired_{sample}_{segment}.txt"
+        ".logs/qsr/minimap2_{order}_paired_{sample}_{segment}.txt"
     shell:
         "minimap2 -ax sr {input} > {output} 2> {log}"
 
