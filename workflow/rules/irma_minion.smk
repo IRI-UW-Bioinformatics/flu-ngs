@@ -7,7 +7,7 @@ rule irma_raw:
     input:
         "processed_reads/{sample}/{sample}_filtered.fastq.gz",
     output:
-        protected(directory("results/{order}/irma-raw/{sample}_{pair}")),
+        directory("results/{order}/irma-raw/{sample}_{pair}")
     log:
         ".logs/irma-{order}-raw/{sample}_{pair}.log",
     conda:
