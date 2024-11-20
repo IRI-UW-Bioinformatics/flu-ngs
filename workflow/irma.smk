@@ -379,7 +379,7 @@ rule minimap_unpaired:
 
 rule minimap_paired:
     input:
-        "results/{order}/irma-raw/{sample}_paired/{segment}.fasta",
+        "results/{order}/irma-raw/{sample}_combined/{segment}.fasta",  # Maps the paired reads to the combined reference
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
