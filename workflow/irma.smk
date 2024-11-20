@@ -443,7 +443,7 @@ rule run_abayesqr:
 rule run_tensqr:
     input:
         "results/qsr/{order}/{sample}/{segment}/tensqr_config.txt",
-        "results/qsr/{order}/{sample}/{segment}/aligned.sam"
+        "results/qsr/{order}/combined/{sample}/{segment}/aligned.sam"
     output:
         "results/qsr/{order}/{sample}/{segment}/tensqr_ViralSeq.fasta"
     params:
