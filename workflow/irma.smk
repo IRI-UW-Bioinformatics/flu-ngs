@@ -41,7 +41,8 @@ wildcard_constraints:
     n="1|2",
     pair="(paired)|(combined)|(longread)",
     order="(primary)|(secondary)",
-    qsr_type="(abayesqsr)|(tensqr)"
+    qsr_type="(abayesqsr)|(tensqr)",
+    sample="[^/]*"
 
 
 include: f"rules/irma_{config['platform']}.smk"
@@ -366,7 +367,7 @@ rule minimap_unpaired:
     unpaired reads).
     """
     input:
-        "results/{order}/irma-raw/{sample}_combined/{segment}.fasta"
+        "results/{order}/irma-raw/{sample}_combined/{segment}.fasta",
         "processed_reads/{sample}/{sample}_unpaired.fastq"
     output:
         temp("results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam")
@@ -378,7 +379,7 @@ rule minimap_unpaired:
 
 rule minimap_paired:
     input:
-        "results/{order}/irma-raw/{sample}_paired/{segment}.fasta"
+        "results/{order}/irma-raw/{sample}_paired/{segment}.fasta",
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
@@ -391,7 +392,7 @@ rule minimap_paired:
 
 rule minimap_combined:
     input:
-        "results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam"
+        "results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam",
         "results/qsr/{order}/paired/{sample}/{segment}/aligned.sam"
     output:
         temp("results/qsr/{order}/combined/{sample}/{segment}/aligned.sam")
@@ -401,7 +402,7 @@ rule minimap_combined:
 
 rule make_qsr_config:
     input:
-        fasta="results/{order}/irma/{sample}_{pair}/{segment}.fasta",
+        fasta="results/{order}/irma/{sample}_combined/{segment}.fasta",
         sam="results/qsr/{order}/combined/{sample}/{segment}/aligned.sam"
     output:
         "results/qsr/{order}/{sample}/{segment}/{qsr_type}_config.txt"
