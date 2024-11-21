@@ -196,7 +196,7 @@ def collect_segments(path, default_wildcards=None):
         path (str): What file names should look like. It should contain
             {segment} (which is expanded based on what segments IRMA finds), and can
             contain {sample} and {pair} (which are expanded based on wildcards).
-        default_wildcards (dict): Optional default wildcardds to pass to expand. This is useful if
+        default_wildcards (dict): Optional default wildcards to pass to expand. This is useful if
             the path that is passed doesn't contain wildcards that are necessary for finding the
             IRMA output.
     """
@@ -262,7 +262,7 @@ rule translate:
         "transeq -sequence {input} -outseq {output} > {log} 2>&1"
 
 
-rule concat_segements:
+rule concat_segments:
     input:
         collect_segments("results/{order}/variants-mcc/{sample}_{pair}/{segment}.tsv"),
     output:
