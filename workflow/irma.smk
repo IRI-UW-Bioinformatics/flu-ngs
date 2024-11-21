@@ -7,7 +7,22 @@ min_version("7.0.4")
 configfile: "config.json"
 
 
+def check_combined_in_config_if_qsr(config):
+
+    class ConfigError(Warning): ...
+
+    if config["qsr"]:
+        if "combined" not in config["pair"]:
+            raise ConfigError(
+                "\n'combined' must be in config.json 'pair' list to do quasispecies / mixed sample "
+                "reconstruction.\n\n"
+                "Either add 'combined' to the config.json 'pair' list or make the "
+                "'qsr' list empty.\n"
+            )
+
+
 validate(config, schema="schemas/config-schema.json")
+check_combined_in_config_if_qsr(config)
 
 
 def expand_order(path):
