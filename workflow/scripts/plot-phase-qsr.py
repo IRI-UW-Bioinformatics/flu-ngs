@@ -49,7 +49,7 @@ def snp_columns_to_df(series: "pd.Series[list[str]]"):
     )
 
 
-def records_to_df(records: list[dict]) -> pd.DataFrame:
+def records_to_df(records: "list[dict]") -> pd.DataFrame:
     df = pd.DataFrame(records).set_index("strain_i")
     return (
         df.join(snp_columns_to_df(df["snps"]))
@@ -86,7 +86,7 @@ def make_snp(row: pd.Series) -> str:
     return f"{m}{site}{c}"
 
 
-def load_irma_tables(paths: list[str]) -> pd.DataFrame | None:
+def load_irma_tables(paths: "list[str]") -> pd.DataFrame | None:
     """
     Load IRMA variant tables for multiple segments. These are output by the workflow in:
 
@@ -112,10 +112,10 @@ def load_irma_tables(paths: list[str]) -> pd.DataFrame | None:
 
         df["SNP"] = df.apply(make_snp, axis=1)
 
-        return df
+        return df.set_index("Segment")
 
 
-def load_qsr_sequences(paths: list[str], ref_seq_dir: str) -> dict:
+def load_qsr_sequences(paths: "list[str]", ref_seq_dir: str) -> dict:
     """
     Load QSR sequences for multiple segments for a single sample.
 
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    df_irma = load_irma_tables(args.irma_tables).set_index("Segment")
+    df_irma = load_irma_tables(args.irma_tables)
     qsr = load_qsr_sequences(paths=args.qsr_fastas, ref_seq_dir=args.ref_seq_dir)
 
     snp_plot(qsr, df_irma)
