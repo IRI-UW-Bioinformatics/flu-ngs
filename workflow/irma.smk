@@ -7,7 +7,22 @@ min_version("7.0.4")
 configfile: "config.json"
 
 
+def check_combined_in_config_if_qsr(config):
+
+    class ConfigError(Warning): ...
+
+    if config["qsr"]:
+        if "combined" not in config["pair"]:
+            raise ConfigError(
+                "\n'combined' must be in config.json 'pair' list to do quasispecies / mixed sample "
+                "reconstruction.\n\n"
+                "Either add 'combined' to the config.json 'pair' list or make the "
+                "'qsr' list empty.\n"
+            )
+
+
 validate(config, schema="schemas/config-schema.json")
+check_combined_in_config_if_qsr(config)
 
 
 def expand_order(path):
@@ -30,7 +45,7 @@ rule all:
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
         expand(
-            "results/qsr/{order}/{sample}/{qsr_type}_ViralSeq.fasta",
+            "results/{order}/qsr/{sample}/{qsr_type}_ViralSeq.fasta",
             order=config["order"],
             sample=config["samples"],
             qsr_type=config["qsr"],
@@ -370,7 +385,7 @@ rule minimap_unpaired:
         "results/{order}/irma-raw/{sample}_combined/{segment}.fasta",
         "processed_reads/{sample}/{sample}_unpaired.fastq"
     output:
-        temp("results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam")
+        temp("results/{order}/qsr/{sample}/{segment}/aligned_unpaired.sam")
     log:
         ".logs/qsr/minimap2_{order}_unpaired_{sample}_{segment}.txt"
     shell:
@@ -383,7 +398,7 @@ rule minimap_paired:
         "processed_reads/{sample}/{sample}_1_paired.fastq",
         "processed_reads/{sample}/{sample}_2_paired.fastq"
     output:
-        temp("results/qsr/{order}/paired/{sample}/{segment}/aligned.sam")
+        temp("results/{order}/qsr/{sample}/{segment}/aligned_paired.sam")
     log:
         ".logs/qsr/minimap2_{order}_paired_{sample}_{segment}.txt"
     shell:
@@ -392,10 +407,10 @@ rule minimap_paired:
 
 rule minimap_combined:
     input:
-        "results/qsr/{order}/unpaired/{sample}/{segment}/aligned.sam",
-        "results/qsr/{order}/paired/{sample}/{segment}/aligned.sam"
+        "results/{order}/qsr/{sample}/{segment}/aligned_unpaired.sam",
+        "results/{order}/qsr/{sample}/{segment}/aligned_paired.sam"
     output:
-        temp("results/qsr/{order}/combined/{sample}/{segment}/aligned.sam")
+        temp("results/{order}/qsr/{sample}/{segment}/aligned_combined.sam")
     shell:
         "samtools merge -o {output} {input}"
 
@@ -403,27 +418,29 @@ rule minimap_combined:
 rule make_qsr_config:
     input:
         fasta="results/{order}/irma/{sample}_combined/{segment}.fasta",
-        sam="results/qsr/{order}/combined/{sample}/{segment}/aligned.sam"
+        sam="results/{order}/qsr/{sample}/{segment}/aligned_combined.sam"
     output:
-        "results/qsr/{order}/{sample}/{segment}/{qsr_type}_config.txt"
+        "results/{order}/qsr/{sample}/{segment}/{qsr_type}_config.txt"
+    params:
+        sam_name=lambda x: Path(rules.make_qsr_config.input.sam).name
     shell:
         """
         workflow/scripts/make-qsr-config.py \
             --type {wildcards.qsr_type} \
             --fasta {input.fasta} \
-            --sam aligned.sam \
+            --sam {params.sam_name} \
             --prefix {wildcards.qsr_type} > {output}
         """
 
 
 rule run_abayesqr:
     input:
-        "results/qsr/{order}/{sample}/{segment}/abayesqr_config.txt",
-        "results/qsr/{order}/{sample}/{segment}/aligned.sam"
+        "results/{order}/qsr/{sample}/{segment}/abayesqr_config.txt",
+        "results/{order}/qsr/{sample}/{segment}/aligned_combined.sam"
     output:
-        "results/qsr/{order}/{sample}/{segment}/abayesqr_ViralSeq.fasta"
+        "results/{order}/qsr/{sample}/{segment}/abayesqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{order}/{sample}/{segment}"
+        working_dir="results/{order}/qsr/{sample}/{segment}"
     shell:
         """
         cd {params.working_dir}
@@ -442,14 +459,16 @@ rule run_abayesqr:
 
 rule run_tensqr:
     input:
-        "results/qsr/{order}/{sample}/{segment}/tensqr_config.txt",
-        "results/qsr/{order}/combined/{sample}/{segment}/aligned.sam"
+        "results/{order}/qsr/{sample}/{segment}/tensqr_config.txt",
+        "results/{order}/qsr/{sample}/{segment}/aligned_combined.sam"
     output:
-        "results/qsr/{order}/{sample}/{segment}/tensqr_ViralSeq.fasta"
+        "results/{order}/qsr/{sample}/{segment}/tensqr_ViralSeq.fasta"
     params:
-        working_dir="results/qsr/{order}/{sample}/{segment}"
+        refseq="results/{order}/irma/{sample}_combined/{segment}.fasta",
+        working_dir="results/{order}/qsr/{sample}/{segment}"
     shell:
         """
+        ln -sf {params.refseq} {params.working_dir}
         cd {params.working_dir}
         ExtractMatrix tensqr_config.txt > .tensqr_extractmatrix_log.txt 2>&1
 
@@ -484,10 +503,10 @@ rule run_tensqr:
 rule collect_qsr_sequences_for_all_segments:
     input:
         collect_segments(
-            "results/qsr/{order}/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
+            "results/{order}/qsr/{sample}/{segment}/{qsr_type}_ViralSeq.fasta",
             default_wildcards=dict(pair="combined")
         )
     output:
-        "results/qsr/{order}/{sample}/{qsr_type}_ViralSeq.fasta"
+        "results/{order}/qsr/{sample}/{qsr_type}_ViralSeq.fasta"
     shell:
         "cat {input} > {output}"
