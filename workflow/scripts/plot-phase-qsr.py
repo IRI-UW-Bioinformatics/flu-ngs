@@ -147,6 +147,13 @@ def load_qsr_sequences(paths: list[str], ref_seq_dir: str) -> dict:
 
 
 def snp_plot(qsr: dict[str, dict], df: pd.DataFrame):
+    """
+    Plots SNP comparison between IRMA variants and QSR reconstructions.
+
+    Args:
+        qsr (dict[str, dict]): A dictionary containing quasispecies sequence data for each segment.
+        df (pd.DataFrame): A DataFrame containing IRMA SNPs.
+    """
     # Count how many SNPs each segment has (ax widths are scaled accordingly)
     snps = defaultdict(set)
     df_irma = {}
