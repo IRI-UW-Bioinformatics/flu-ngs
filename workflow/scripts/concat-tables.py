@@ -11,7 +11,7 @@ if __name__ == "__main__":
         "concat-tables.py",
         description="Concatenate TSV data. If all tables are empty, then no file is written.",
     )
-    parser.add_argument("tables", help="TSV files", nargs="+")
+    parser.add_argument("tables", help="TSV files", nargs="*", default=[])
     args = parser.parse_args()
 
     tables = []

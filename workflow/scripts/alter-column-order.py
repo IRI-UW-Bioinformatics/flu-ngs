@@ -2,6 +2,7 @@
 
 import argparse
 import pandas as pd
+from math import inf
 
 if __name__ == "__main__":
 
@@ -16,8 +17,10 @@ if __name__ == "__main__":
 
     input_xl = pd.ExcelFile(args.input)
 
+    order = {value: index for index, value in enumerate(args.order)}
+
     with pd.ExcelWriter(args.output) as writer:
         for sheet in input_xl.sheet_names:
             df = input_xl.parse(sheet)
-            new_order = sorted(df.columns, key=args.order.index)
+            new_order = sorted(df.columns, key=lambda x: order.get(x, inf))
             df[new_order].to_excel(writer, index=False, sheet_name=sheet)
