@@ -1,45 +1,53 @@
 {
-  "$schema": "http://json-schema.org/draft-06/schema#",
-  "properties": {
-    "platform": {
-      "type": "string",
-      "enum": [
-        "miseq",
-        "minion"
-      ]
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "properties": {
+        "platform": {
+            "type": "string",
+            "enum": [
+                "miseq",
+                "minion"
+            ]
+        },
+        "samples": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "pair": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "errors": {
+            "type": "string"
+        },
+        "order": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "qsr": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 0,
+            "uniqueItems": true
+        }
     },
-    "samples": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1,
-      "uniqueItems": true
-    },
-    "pair": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1,
-      "uniqueItems": true
-    },
-    "errors": {
-      "type": "string"
-    },
-    "order": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1,
-      "uniqueItems": true
-    }
-  },
-  "required": [
-    "samples",
-    "pair",
-    "errors",
-    "order"
-  ]
+    "required": [
+        "samples",
+        "pair",
+        "errors",
+        "order"
+    ]
 }

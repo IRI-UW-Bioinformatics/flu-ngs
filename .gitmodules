@@ -1,0 +1,3 @@
+[submodule "external/TenSQR"]
+	path = external/TenSQR
+	url = https://github.com/davipatti/TenSQR
