@@ -45,7 +45,7 @@ rule all:
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
         expand(
-            "results/{order}/qsr/{sample}/{qsr_type}_ViralSeq.fasta",
+            "results/{order}/qsr/{sample}/{qsr_type}_irma_snps.pdf",
             order=config["order"],
             sample=config["samples"],
             qsr_type=config["qsr"],
@@ -411,8 +411,10 @@ rule minimap_combined:
         "results/{order}/qsr/{sample}/{segment}/aligned_paired.sam"
     output:
         temp("results/{order}/qsr/{sample}/{segment}/aligned_combined.sam")
+    log:
+        ".logs/qsr/samtools_merge_{order}_{sample}_{segment}.txt"
     shell:
-        "samtools merge -o {output} {input}"
+        "samtools merge -o {output} {input} 2> {log}"
 
 
 rule make_qsr_config:
@@ -497,6 +499,23 @@ rule run_tensqr:
             touch tensqr_ViralSeq.fasta
 
         fi
+        """
+
+
+rule plot_irma_qsr_comparison:
+    input:
+        "results/{order}/qsr/{sample}/{qsr_type}_ViralSeq.fasta"
+    output:
+        "results/{order}/qsr/{sample}/{qsr_type}_irma_snps.pdf",
+        "results/{order}/qsr/{sample}/{qsr_type}_irma_snps.png"
+    shell:
+        """
+        workflow/scripts/plot-phase-qsr.py \
+            --irma-tables results/{wildcards.order}/variants/{wildcards.sample}_combined/*.tsv \
+            --qsr-fastas results/{wildcards.order}/qsr/{wildcards.sample}/*/tensqr_ViralSeq.fasta \
+            --ref-seq-dir results/{wildcards.order}/irma/{wildcards.sample}_combined \
+            --title {wildcards.sample} \
+            --output_name {output}
         """
 
 
