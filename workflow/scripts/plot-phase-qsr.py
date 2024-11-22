@@ -17,8 +17,15 @@ SEGMENT_TO_PROTEIN = {"MP": "M1", "NS": "NS1"}
 SEGMENTS = "PB2", "PB1", "PA", "NP", "HA", "NA", "MP", "NS"
 
 
-def snp_position(snp: str):
-    return int(re.search("(\d+)", snp).group())
+def snp_position(snp: str) -> int:
+    """
+    Lookup the position of a SNP.
+    """
+    try:
+        return int(re.search("(\d+)", snp).group())
+    except AttributeError as err:
+        print(f"'{snp}' doesn't contain an integer")
+        raise err
 
 
 def infer_snps(seq_a, seq_b, ignore="-"):
@@ -165,7 +172,9 @@ def snp_plot(qsr: dict[str, dict], df: pd.DataFrame):
 
         irma_seg = SEGMENT_TO_PROTEIN.get(seg, seg)
         if irma_seg in df.index:
-            df_irma[seg] = df.loc[irma_seg]
+            # Using a list as key here means a DataFrame is returned (rather than a series) even if
+            # just a single row is present.
+            df_irma[seg] = df.loc[[irma_seg]]
             snps[seg].update(df_irma[seg]["SNP"])
 
         if seg in qsr:

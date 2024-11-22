@@ -294,7 +294,7 @@ rule combine_samples:
             pair=config["pair"],
         ),
     output:
-        temp("results/{order}/xlsx/variants-mcc-by-sample.xlsx"),
+        "results/{order}/xlsx/variants-mcc-by-sample.xlsx"
     shell:
         "workflow/scripts/combine-tables.py {input} --excel {output}"
 
@@ -303,8 +303,8 @@ rule by_segment_summary:
     input:
         "results/{order}/xlsx/variants-mcc-by-sample.xlsx",
     output:
-        segment=temp("results/{order}/xlsx/variants-mcc-by-segment.xlsx"),
-        flat=temp("results/{order}/xlsx/variants-mcc-flat.xlsx"),
+        segment="results/{order}/xlsx/variants-mcc-by-segment.xlsx",
+        flat="results/{order}/xlsx/variants-mcc-flat.xlsx"
     log:
         ".logs/make-segment-summary-{order}.log",
     shell:
@@ -468,6 +468,8 @@ rule run_tensqr:
     params:
         refseq="results/{order}/irma/{sample}_combined/{segment}.fasta",
         working_dir="results/{order}/qsr/{sample}/{segment}"
+    resources:
+        timeout=600  # Spend a maximum of 10 minutes.
     shell:
         """
         ln -sf {params.refseq} {params.working_dir}
