@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from typing import Optional
 from collections import defaultdict
 from pathlib import Path
 import argparse
@@ -155,7 +156,7 @@ def load_qsr_sequences(paths: "list[str]", ref_seq_dir: str) -> dict:
     return qsr
 
 
-def snp_plot(qsr: dict[str, dict], df: pd.DataFrame):
+def snp_plot(qsr: dict[str, dict], df: Optional[pd.DataFrame]):
     """
     Plots SNP comparison between IRMA variants and QSR reconstructions.
 
@@ -171,7 +172,7 @@ def snp_plot(qsr: dict[str, dict], df: pd.DataFrame):
     for seg in SEGMENTS:
 
         irma_seg = SEGMENT_TO_PROTEIN.get(seg, seg)
-        if irma_seg in df.index:
+        if df is not None and irma_seg in df.index:
             # Using a list as key here means a DataFrame is returned (rather than a series) even if
             # just a single row is present.
             df_irma[seg] = df.loc[[irma_seg]]
