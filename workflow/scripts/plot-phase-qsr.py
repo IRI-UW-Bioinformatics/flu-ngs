@@ -23,7 +23,7 @@ def snp_position(snp: str) -> int:
     Lookup the position of a SNP.
     """
     try:
-        return int(re.search("(\d+)", snp).group())
+        return int(re.search(r"(\d+)", snp).group())
     except AttributeError as err:
         print(f"'{snp}' doesn't contain an integer")
         raise err
