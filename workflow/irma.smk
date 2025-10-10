@@ -223,7 +223,7 @@ def collect_segments(path, default_wildcards=None):
         """
         irma_dir = checkpoints.find_irma_output.get(**wildcards, **default_wildcards).output[0]
         found_segments = set(path.stem for path in Path(irma_dir).glob("*.vcf"))
-        ignored_segments = config.get("ignore_segments", set())
+        ignored_segments = set(config.get("ignore_segments", []))
         segments = sorted(found_segments - ignored_segments)
         return expand(path, segment=segments, **wildcards)
 
