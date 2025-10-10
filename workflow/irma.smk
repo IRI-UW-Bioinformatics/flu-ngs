@@ -222,7 +222,9 @@ def collect_segments(path, default_wildcards=None):
         Make a list of files containing segment names, based on segments that IRMA has found.
         """
         irma_dir = checkpoints.find_irma_output.get(**wildcards, **default_wildcards).output[0]
-        segments = [path.stem for path in Path(irma_dir).glob("*.vcf")]
+        found_segments = set(path.stem for path in Path(irma_dir).glob("*.vcf"))
+        ignored_segments = config.get("ignore_segments", set())
+        segments = sorted(found_segments - ignored_segments)
         return expand(path, segment=segments, **wildcards)
 
     return fun

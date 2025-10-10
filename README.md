@@ -139,6 +139,9 @@ Run parameters are passed to the workflow by a file called `config.json` that sh
 - `errors`. Either `warn` or `raise`. This controls error handling for some steps in the workflow. `warn` issues warnings if something goes wrong, but will attempt to carry on. `raise` would not carry on.
 - `qsr`. A list that can either be empty or contain some combination of `tensqr` and `abayesqr` to
   run a particular quasispecies spectrum reconstruction (QSR) algorithm. See below for more details.
+- `ignore_segments`. (Optional). A list of segments that IRMA might find to exclude from
+  all downstream processing. Names of segments should match those that IRMA
+  uses, e.g. `A_PA`, `A_NA_N1` or `A_NS`.
 
 MiSeq example:
 
@@ -157,7 +160,13 @@ MiSeq example:
     "secondary"
   ],
   "errors": "warn",
-  "qsr": ["tensqr"]
+  "qsr": [
+    "tensqr"
+  ],
+  "ignore_segments": [
+    "A_NS",
+    "A_PA"
+  ]
 }
 ```
 
