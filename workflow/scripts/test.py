@@ -193,7 +193,7 @@ class TestComputePadding(unittest.TestCase):
         """Full-length sequence should need no padding."""
         ref = "ACGTACGTACGTACGT"
         query = "ACGTACGTACGTACGT"
-        leading, trailing = pis.compute_padding(query, ref)
+        leading, trailing, _aln = pis.compute_padding(query, ref)
         self.assertEqual(0, leading)
         self.assertEqual(0, trailing)
 
@@ -201,7 +201,7 @@ class TestComputePadding(unittest.TestCase):
         """Sequence missing the start should get leading N's."""
         ref = "AACCTTGGAACCTTGG"
         query = "TTGGAACCTTGG"  # missing first 4 bases
-        leading, trailing = pis.compute_padding(query, ref)
+        leading, trailing, _aln = pis.compute_padding(query, ref)
         self.assertEqual(4, leading)
         self.assertEqual(0, trailing)
 
@@ -209,7 +209,7 @@ class TestComputePadding(unittest.TestCase):
         """Sequence missing the end should get trailing N's."""
         ref = "AACCTTGGCCAAGGTT"
         query = "AACCTTGGCCAA"  # missing last 4 bases
-        leading, trailing = pis.compute_padding(query, ref)
+        leading, trailing, _aln = pis.compute_padding(query, ref)
         self.assertEqual(0, leading)
         self.assertEqual(4, trailing)
 
@@ -217,7 +217,7 @@ class TestComputePadding(unittest.TestCase):
         """Sequence missing both ends should get both leading and trailing N's."""
         ref = "AACCTTGGCCAAGGTT"
         query = "CCTTGGCCAAGG"  # missing first 2 and last 2
-        leading, trailing = pis.compute_padding(query, ref)
+        leading, trailing, _aln = pis.compute_padding(query, ref)
         self.assertEqual(2, leading)
         self.assertEqual(2, trailing)
 

@@ -36,7 +36,7 @@ def compute_padding(query_seq, ref_seq):
     """
     Align *query_seq* (IRMA consensus) to *ref_seq* (IRMA reference) with a
     semi-global alignment (no end-gap penalties on the reference/target) and
-    return (leading_ns, trailing_ns).
+    return (leading_ns, trailing_ns, alignment_str).
     """
     aligner = PairwiseAligner()
     aligner.mode = "global"
@@ -59,7 +59,7 @@ def compute_padding(query_seq, ref_seq):
     leading_ns = target_intervals[0][0]
     trailing_ns = len(ref_seq) - target_intervals[-1][1]
 
-    return leading_ns, trailing_ns
+    return leading_ns, trailing_ns, format(aln)
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +118,13 @@ def pad_irma_dir(irma_dir, references, errors):
     """
     For every *.fasta in *irma_dir*, align to matching reference and pad if
     needed.  Also shift positions in corresponding VCF and table files.
+
+    Writes incomplete-sequence-padding-report.txt to *irma_dir*.
     """
     irma_dir = Path(irma_dir)
+
+    full_length_segments = []
+    padded_segments = []
 
     for fasta_path in sorted(irma_dir.glob("*.fasta")):
         segment = fasta_path.stem
@@ -135,11 +140,14 @@ def pad_irma_dir(irma_dir, references, errors):
             record = next(SeqIO.parse(fobj, "fasta"))
 
         ref_record = references[segment]
-        leading_ns, trailing_ns = compute_padding(
+        leading_ns, trailing_ns, alignment_str = compute_padding(
             str(record.seq), str(ref_record.seq)
         )
 
         if leading_ns == 0 and trailing_ns == 0:
+            full_length_segments.append(
+                (segment, len(record.seq), len(ref_record.seq))
+            )
             continue
 
         # --- warn / raise ------------------------------------------------
@@ -154,6 +162,11 @@ def pad_irma_dir(irma_dir, references, errors):
             raise ValueError(msg)
 
         warnings.warn(msg)
+
+        padded_segments.append(
+            (segment, len(record.seq), len(ref_record.seq),
+             leading_ns, trailing_ns, alignment_str)
+        )
 
         # --- pad FASTA ---------------------------------------------------
         pad_fasta(fasta_path, leading_ns, trailing_ns)
@@ -178,6 +191,47 @@ def pad_irma_dir(irma_dir, references, errors):
                 del_path = tables_dir / f"{segment}-deletions.txt"
                 if del_path.exists():
                     shift_table(del_path, "Upstream_Position", leading_ns)
+
+    # --- write report ----------------------------------------------------
+    write_report(irma_dir, full_length_segments, padded_segments)
+
+
+def write_report(irma_dir, full_length_segments, padded_segments):
+    """Write incomplete-sequence-padding-report.txt to *irma_dir*."""
+    report_path = irma_dir / "incomplete-sequence-padding-report.txt"
+    with open(report_path, "w") as f:
+        f.write("Incomplete-sequence padding report\n")
+        f.write("=" * 60 + "\n\n")
+
+        # --- full-length segments ----------------------------------------
+        f.write("Segments that did not need padding\n")
+        f.write("-" * 60 + "\n")
+        f.write("(Consensus already matches reference length — no action taken.)\n\n")
+        if full_length_segments:
+            for segment, query_len, ref_len in full_length_segments:
+                f.write(f"  {segment}: {query_len} nt (reference {ref_len} nt)\n")
+        else:
+            f.write("  (none)\n")
+
+        f.write("\n")
+
+        # --- padded segments ---------------------------------------------
+        f.write("Segments that were padded\n")
+        f.write("-" * 60 + "\n\n")
+        if not padded_segments:
+            f.write("  (none)\n")
+        else:
+            for (segment, query_len, ref_len,
+                 leading, trailing, alignment_str) in padded_segments:
+                f.write(f"  {segment}\n")
+                f.write(f"    Consensus length: {query_len}\n")
+                f.write(f"    Reference length: {ref_len}\n")
+                f.write(f"    Leading N's:  {leading}\n")
+                f.write(f"    Trailing N's: {trailing}\n")
+                f.write(f"\n    Alignment (reference on top, consensus on bottom):\n\n")
+                for line in alignment_str.splitlines():
+                    f.write(f"      {line}\n")
+                f.write("\n")
 
 
 if __name__ == "__main__":
