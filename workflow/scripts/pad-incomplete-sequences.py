@@ -229,9 +229,12 @@ def write_report(irma_dir, full_length_segments, padded_segments):
                 f.write(f"    Leading N's:  {leading}\n")
                 f.write(f"    Trailing N's: {trailing}\n")
                 f.write(f"\n    Alignment (reference on top, consensus on bottom):\n\n")
-                for line in alignment_str.splitlines():
-                    f.write(f"      {line}\n")
-                f.write("\n")
+                aln_lines = alignment_str.splitlines()
+                width = 80
+                for start in range(0, len(aln_lines[0]), width):
+                    for line in aln_lines:
+                        f.write(f"      {line[start:start+width]}\n")
+                    f.write("\n")
 
 
 if __name__ == "__main__":
