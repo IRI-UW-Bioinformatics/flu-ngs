@@ -140,6 +140,21 @@ def find_ns_splice_sites(seq: str) -> Tuple[int, int]:
     return donor_loc, accept_loc
 
 
+def validate_gff_coordinates(gff: str) -> List[Tuple[int, str]]:
+    """
+    Check that all GFF rows have start <= end. Returns a list of
+    (line_number, line) tuples for any rows where start > end.
+    """
+    invalid_rows = []
+    for i, line in enumerate(gff.splitlines(), 1):
+        fields = line.split("\t")
+        if len(fields) >= 5:
+            start, end = int(fields[3]), int(fields[4])
+            if start > end:
+                invalid_rows.append((i, line))
+    return invalid_rows
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "write-gff.py",
@@ -253,6 +268,16 @@ if __name__ == "__main__":
             start=1,
             end=len(record),
             transcript_id=args.transcript_id,
+        )
+
+    # Validate that all GFF rows have start <= end (issue #20).
+    invalid_rows = validate_gff_coordinates(gff)
+
+    if invalid_rows:
+        details = "\n".join(f"  line {i}: {line}" for i, line in invalid_rows)
+        raise ValueError(
+            "GFF has rows where start > end (likely due to an incomplete "
+            "consensus sequence):\n" + details
         )
 
     stderr.write("Used {} to write GFF\n".format(path))

@@ -140,6 +140,43 @@ class TestSpliceNS(unittest.TestCase):
             wg.splice_ns(seq, donor_loc, accept_loc)
 
 
+class TestValidateGffCoordinates(unittest.TestCase):
+    """
+    Tests for write_gff.validate_gff_coordinates.
+    """
+
+    def test_valid_gff_returns_empty(self):
+        gff = (
+            "A_MP\tflu-ngs\tgene\t1\t982\t.\t+\t.\tID=gene1\n"
+            "A_MP\tflu-ngs\texon\t1\t819\t.\t+\t.\tID=exon1_1;Parent=A_M1\n"
+            "A_MP\tflu-ngs\texon\t715\t982\t.\t+\t.\tID=exon3;Parent=A_M2"
+        )
+        self.assertFalse([], wg.validate_gff_coordinates(gff))
+
+    def test_detects_start_greater_than_end(self):
+        gff = (
+            "A_MP\tflu-ngs\tgene\t1\t452\t.\t+\t.\tID=gene1\n"
+            "A_MP\tflu-ngs\texon\t1\t26\t.\t+\t.\tID=exon2;Parent=A_M2\n"
+            "A_MP\tflu-ngs\texon\t715\t452\t.\t+\t.\tID=exon3;Parent=A_M2"
+        )
+        invalid = wg.validate_gff_coordinates(gff)
+        self.assertEqual(len(invalid), 1)
+        self.assertEqual(invalid[0][0], 3)
+        self.assertIn("715", invalid[0][1])
+
+    def test_detects_multiple_invalid_rows(self):
+        gff = (
+            "A_MP\tflu-ngs\texon\t715\t452\t.\t+\t.\tID=exon3;Parent=A_M2\n"
+            "A_MP\tflu-ngs\tCDS\t715\t452\t.\t+\t0\tID=cds3;Parent=A_M2"
+        )
+        invalid = wg.validate_gff_coordinates(gff)
+        self.assertEqual(len(invalid), 2)
+
+    def test_start_equals_end_is_valid(self):
+        gff = "A_MP\tflu-ngs\texon\t500\t500\t.\t+\t.\tID=exon1"
+        self.assertEqual([], wg.validate_gff_coordinates(gff))
+
+
 class TestClassifyTransitionTransversion(unittest.TestCase):
     """
     Tests for classify_transition_transversion in merge-vep-irma.py.
