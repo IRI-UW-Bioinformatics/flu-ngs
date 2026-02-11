@@ -2,6 +2,7 @@
 
 import unittest
 import importlib
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -10,6 +11,7 @@ from Bio import SeqIO
 # Using importlib to handle '-' in .py names
 wg = importlib.import_module("write-gff")
 mvi = importlib.import_module("merge-vep-irma")
+pis = importlib.import_module("pad-incomplete-sequences")
 
 
 class TestFindAll(unittest.TestCase):
@@ -180,6 +182,159 @@ class TestClassifyTransitionTransversion(unittest.TestCase):
                 df = pd.read_table(path).pipe(mvi.make_index_for_irma_variants)
                 output = df.apply(mvi.classify_transition_transversion, axis=1)
                 self.assertIsInstance(output, pd.Series)
+
+
+class TestComputePadding(unittest.TestCase):
+    """
+    Tests for pad-incomplete-sequences.compute_padding.
+    """
+
+    def test_no_padding_needed(self):
+        """Full-length sequence should need no padding."""
+        ref = "ACGTACGTACGTACGT"
+        query = "ACGTACGTACGTACGT"
+        leading, trailing = pis.compute_padding(query, ref)
+        self.assertEqual(0, leading)
+        self.assertEqual(0, trailing)
+
+    def test_leading_padding(self):
+        """Sequence missing the start should get leading N's."""
+        ref = "AACCTTGGAACCTTGG"
+        query = "TTGGAACCTTGG"  # missing first 4 bases
+        leading, trailing = pis.compute_padding(query, ref)
+        self.assertEqual(4, leading)
+        self.assertEqual(0, trailing)
+
+    def test_trailing_padding(self):
+        """Sequence missing the end should get trailing N's."""
+        ref = "AACCTTGGCCAAGGTT"
+        query = "AACCTTGGCCAA"  # missing last 4 bases
+        leading, trailing = pis.compute_padding(query, ref)
+        self.assertEqual(0, leading)
+        self.assertEqual(4, trailing)
+
+    def test_both_padding(self):
+        """Sequence missing both ends should get both leading and trailing N's."""
+        ref = "AACCTTGGCCAAGGTT"
+        query = "CCTTGGCCAAGG"  # missing first 2 and last 2
+        leading, trailing = pis.compute_padding(query, ref)
+        self.assertEqual(2, leading)
+        self.assertEqual(2, trailing)
+
+
+class TestPadFasta(unittest.TestCase):
+    """
+    Tests for pad-incomplete-sequences.pad_fasta.
+    """
+
+    def test_pads_fasta_file(self):
+        """FASTA file should be padded with N's and header preserved."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".fasta", delete=False) as f:
+            f.write(">A_PB2 some description\nATCGATCG\n")
+            path = Path(f.name)
+        try:
+            pis.pad_fasta(path, 3, 2)
+            with open(path) as fobj:
+                record = next(SeqIO.parse(fobj, "fasta"))
+            self.assertEqual("NNN" + "ATCGATCG" + "NN", str(record.seq))
+            self.assertEqual("A_PB2 some description", record.description)
+        finally:
+            path.unlink()
+
+    def test_pads_fasta_file_correctly(self):
+        """Verify exact padded sequence content."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".fasta", delete=False) as f:
+            f.write(">SEG\nACGT\n")
+            path = Path(f.name)
+        try:
+            pis.pad_fasta(path, 2, 3)
+            with open(path) as fobj:
+                record = next(SeqIO.parse(fobj, "fasta"))
+            self.assertEqual("NNACGTNNN", str(record.seq))
+        finally:
+            path.unlink()
+
+
+class TestShiftVcf(unittest.TestCase):
+    """
+    Tests for pad-incomplete-sequences.shift_vcf.
+    """
+
+    def test_shifts_pos_column(self):
+        """POS column should be shifted by the offset; header lines untouched."""
+        vcf_content = (
+            "##fileformat=VCFv4.2\n"
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+            "A_PB2\t10\t.\tA\tG\t.\t.\tDP=100\n"
+            "A_PB2\t25\t.\tC\tT\t.\t.\tDP=200\n"
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".vcf", delete=False) as f:
+            f.write(vcf_content)
+            path = Path(f.name)
+        try:
+            pis.shift_vcf(path, 100)
+            lines = path.read_text().splitlines()
+            # Header lines unchanged
+            self.assertTrue(lines[0].startswith("##"))
+            self.assertTrue(lines[1].startswith("#CHROM"))
+            # Data lines shifted
+            self.assertEqual("110", lines[2].split("\t")[1])
+            self.assertEqual("125", lines[3].split("\t")[1])
+        finally:
+            path.unlink()
+
+
+class TestShiftTable(unittest.TestCase):
+    """
+    Tests for pad-incomplete-sequences.shift_table.
+    """
+
+    def test_shifts_position_column(self):
+        """Position column in variants table should be shifted."""
+        content = (
+            "Reference_Name\tPosition\tTotal\n"
+            "A_PB2\t10\t500\n"
+            "A_PB2\t20\t600\n"
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(content)
+            path = Path(f.name)
+        try:
+            pis.shift_table(path, "Position", 50)
+            lines = path.read_text().splitlines()
+            self.assertEqual("Position", lines[0].split("\t")[1])
+            self.assertEqual("60", lines[1].split("\t")[1])
+            self.assertEqual("70", lines[2].split("\t")[1])
+        finally:
+            path.unlink()
+
+    def test_shifts_upstream_position_column(self):
+        """Upstream_Position column in insertions/deletions should be shifted."""
+        content = (
+            "Reference_Name\tUpstream_Position\tInsert\n"
+            "A_PB2\t5\tAA\n"
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(content)
+            path = Path(f.name)
+        try:
+            pis.shift_table(path, "Upstream_Position", 100)
+            lines = path.read_text().splitlines()
+            self.assertEqual("105", lines[1].split("\t")[1])
+        finally:
+            path.unlink()
+
+    def test_missing_column_is_noop(self):
+        """If the target column doesn't exist, do nothing."""
+        content = "ColA\tColB\n1\t2\n"
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(content)
+            path = Path(f.name)
+        try:
+            pis.shift_table(path, "Position", 10)
+            self.assertEqual(content, path.read_text())
+        finally:
+            path.unlink()
 
 
 if __name__ == "__main__":

@@ -98,8 +98,14 @@ checkpoint find_irma_output:
         # Make directory if necessary
         [ ! -d results/{wildcards.order}/irma ] && mkdir results/{wildcards.order}/irma >> {log}
 
-        # Finally, make the link
-        ln -s "../../../$DIR" {output} >> {log}
+        # Copy instead of symlink (preserves irma-raw, allows in-place correction)
+        cp -a "$DIR" {output} >> {log}
+
+        # Pad incomplete sequences and shift VCF/table positions
+        workflow/scripts/pad-incomplete-sequences.py \
+            --irma-dir {output} \
+            --reference workflow/reference/consensus.fasta \
+            --errors {config[errors]} 2>> {log}
         """
 
 
