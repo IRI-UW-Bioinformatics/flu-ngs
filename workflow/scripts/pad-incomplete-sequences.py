@@ -205,8 +205,7 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None):
             raise ValueError(
                 f"{segment}: alignment between consensus ({len(record.seq)} nt) "
                 f"and reference ({len(ref_record.seq)} nt) contains internal "
-                f"gaps. This may indicate poor quality sequence data. Padding "
-                f"cannot reliably adjust coordinates.\n\n"
+                f"gaps. Padding not implemented for sequences with internal gaps.\n\n"
                 + "\n".join(wrapped)
             )
 
