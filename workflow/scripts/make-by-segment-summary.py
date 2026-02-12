@@ -24,10 +24,16 @@ if __name__ == "__main__":
         df["Sample"] = sheet
         dfs.append(df)
 
-    df = pd.concat(dfs)
+    # Write empty outputs even if there's no data so that snakemake completes.
+    if not dfs or all(df.empty for df in dfs):
+        pd.DataFrame().to_excel(args.out_segment, index=False)
+        pd.DataFrame().to_excel(args.out_flat, index=False)
 
-    with pd.ExcelWriter(args.out_segment) as writer:
-        for segment, sub in df.groupby("Segment"):
-            sub.to_excel(writer, sheet_name=segment, index=False)
+    else:
+        df = pd.concat(dfs)
 
-    df.to_excel(args.out_flat, index=False)
+        with pd.ExcelWriter(args.out_segment) as writer:
+            for segment, sub in df.groupby("Segment"):
+                sub.to_excel(writer, sheet_name=segment, index=False)
+
+        df.to_excel(args.out_flat, index=False)
