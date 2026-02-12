@@ -32,11 +32,57 @@ def load_references(reference_path):
     return refs
 
 
+def format_alignment(aln, ref_seq, query_seq):
+    """
+    Build a 3-line alignment display from a PairwiseAlignment object.
+
+    Returns a string with three lines: the gapped reference, a match indicator
+    line ("|" for matches, " " otherwise), and the gapped query.
+    """
+    target_intervals = aln.aligned[0]
+    query_intervals = aln.aligned[1]
+
+    ref_parts = []
+    query_parts = []
+    prev_t = 0
+    prev_q = 0
+
+    for (t_start, t_end), (q_start, q_end) in zip(target_intervals, query_intervals):
+        t_gap = t_start - prev_t
+        q_gap = q_start - prev_q
+        if t_gap > 0:
+            ref_parts.append(ref_seq[prev_t:t_start])
+            query_parts.append("-" * t_gap)
+        if q_gap > 0:
+            ref_parts.append("-" * q_gap)
+            query_parts.append(query_seq[prev_q:q_start])
+        ref_parts.append(ref_seq[t_start:t_end])
+        query_parts.append(query_seq[q_start:q_end])
+        prev_t = t_end
+        prev_q = q_end
+
+    if prev_t < len(ref_seq):
+        ref_parts.append(ref_seq[prev_t:])
+        query_parts.append("-" * (len(ref_seq) - prev_t))
+    if prev_q < len(query_seq):
+        ref_parts.append("-" * (len(query_seq) - prev_q))
+        query_parts.append(query_seq[prev_q:])
+
+    ref_gapped = "".join(ref_parts)
+    query_gapped = "".join(query_parts)
+    match_line = "".join(
+        "|" if r == q and r != "-" else " "
+        for r, q in zip(ref_gapped, query_gapped)
+    )
+
+    return f"{ref_gapped}\n{match_line}\n{query_gapped}"
+
+
 def compute_padding(query_seq, ref_seq):
     """
     Align *query_seq* (IRMA consensus) to *ref_seq* (IRMA reference) with a
     semi-global alignment (no end-gap penalties on the reference/target) and
-    return (leading_ns, trailing_ns, alignment_str).
+    return (leading_ns, trailing_ns, has_internal_gaps, alignment_str).
     """
     aligner = PairwiseAligner()
     aligner.mode = "global"
@@ -60,7 +106,7 @@ def compute_padding(query_seq, ref_seq):
     trailing_ns = len(ref_seq) - target_intervals[-1][1]
     has_internal_gaps = len(target_intervals) > 1
 
-    return leading_ns, trailing_ns, has_internal_gaps, format(aln)
+    return leading_ns, trailing_ns, has_internal_gaps, format_alignment(aln, ref_seq, query_seq)
 
 
 # ---------------------------------------------------------------------------
@@ -146,11 +192,18 @@ def pad_irma_dir(irma_dir, references, errors):
         )
 
         if has_internal_gaps:
+            aln_lines = alignment_str.splitlines()
+            wrapped = []
+            for start in range(0, len(aln_lines[0]), 80):
+                for line in aln_lines:
+                    wrapped.append(line[start:start + 80])
+                wrapped.append("")
             raise ValueError(
                 f"{segment}: alignment between consensus ({len(record.seq)} nt) "
                 f"and reference ({len(ref_record.seq)} nt) contains internal "
-                f"gaps. Padding cannot reliably adjust coordinates.\n\n"
-                f"Alignment:\n{alignment_str}"
+                f"gaps. This may indicate poor quality sequence data. Padding "
+                f"cannot reliably adjust coordinates.\n\n"
+                + "\n".join(wrapped)
             )
 
         if leading_ns == 0 and trailing_ns == 0:
