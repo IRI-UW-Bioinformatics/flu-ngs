@@ -203,7 +203,7 @@ def pad_irma_dir(irma_dir, references, errors):
                 f"and reference ({len(ref_record.seq)} nt) contains internal "
                 f"gaps. This may indicate poor quality sequence data. Padding "
                 f"cannot reliably adjust coordinates.\n\n"
-                + "\n".join(wrapped)
+                + "\n\n".join(wrapped)
             )
 
         if leading_ns == 0 and trailing_ns == 0:
