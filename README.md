@@ -158,25 +158,12 @@ MiSeq example:
 ```
 {
   "platform": "miseq",
-  "samples": [
-    "YK_2837",
-    "YK_2970"
-  ],
-  "pair": [
-    "combined"
-  ],
-  "order": [
-    "primary",
-    "secondary"
-  ],
+  "samples": ["YK_2837", "YK_2970"],
+  "pair": ["combined"],
+  "order": ["primary", "secondary"],
   "errors": "warn",
-  "qsr": [
-    "tensqr"
-  ],
-  "ignore_segments": [
-    "A_NS",
-    "A_PA"
-  ],
+  "qsr": ["tensqr"],
+  "ignore_segments": ["A_NS", "A_PA"],
   "pad_incomplete_segments": true
 }
 ```
@@ -186,16 +173,9 @@ MinION example:
 ```
 {
   "platform": "minion",
-  "samples": [
-    "barcode05",
-    "barcode06"
-  ],
-  "pair": [
-    "longread"
-  ],
-  "order": [
-    "primary",
-  ],
+  "samples": ["barcode05", "barcode06"],
+  "pair": ["longread"],
+  "order": ["primary"],
   "errors": "warn",
   "qsr": ["tensqr"],
   "pad_incomplete_segments": true
