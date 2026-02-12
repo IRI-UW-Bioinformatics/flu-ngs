@@ -42,6 +42,14 @@
             },
             "minItems": 0,
             "uniqueItems": true
+        },
+        "ignored_segments": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 0,
+            "uniqueItems": true
         }
     },
     "required": [
