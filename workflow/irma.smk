@@ -77,7 +77,7 @@ checkpoint find_irma_output:
 
         secondary_assembly/secondary_assembly/secondary_assembly
 
-    Here, find the most nested secondary_assembly path and link it in to the
+    Here, find the most nested secondary_assembly path and copy it in to the
     results directory so that it is easy to point to for other rules.
     """
     input:
