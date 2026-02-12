@@ -13,7 +13,6 @@ rule irma_raw:
     conda:
         "../envs/irma.yaml"
     threads:
-        # take all threads to stop multiple instances of this rule fighting for threads
         workflow.cores
     params:
         config="workflow/config/FLU-{order}-iri-minion.sh"

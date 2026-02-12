@@ -13,7 +13,7 @@ rule irma_raw:
     conda:
         "../envs/irma.yaml"
     threads:
-        4  # Feel free to set higher if you don't have many samples
+        workflow.cores
     params:
         config="workflow/config/FLU-{order}-iri.sh"
     shell:
