@@ -86,6 +86,8 @@ checkpoint find_irma_output:
         directory("results/{order}/irma/{sample}_{pair}"),
     log:
         ".logs/irma-{order}/{sample}_{pair}.log",
+    params:
+        ignore_segments=" ".join(config.get("ignore_segments", [])),
     shell:
         """
         # Find the most nested secondary_assembly dir
@@ -105,7 +107,8 @@ checkpoint find_irma_output:
         workflow/scripts/pad-incomplete-sequences.py \
             --irma-dir {output} \
             --reference workflow/reference/consensus.fasta \
-            --errors {config[errors]} 2>> {log}
+            --errors {config[errors]} \
+            --ignore-segments {params.ignore_segments} 2>> {log}
         """
 
 

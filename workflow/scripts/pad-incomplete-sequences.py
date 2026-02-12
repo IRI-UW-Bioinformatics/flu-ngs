@@ -161,7 +161,7 @@ def shift_table(table_path, column_name, offset):
 # Main driver
 # ---------------------------------------------------------------------------
 
-def pad_irma_dir(irma_dir, references, errors):
+def pad_irma_dir(irma_dir, references, errors, ignore_segments=None):
     """
     For every *.fasta in *irma_dir*, align to matching reference and pad if
     needed.  Also shift positions in corresponding VCF and table files.
@@ -169,12 +169,16 @@ def pad_irma_dir(irma_dir, references, errors):
     Writes incomplete-sequence-padding-report.txt to *irma_dir*.
     """
     irma_dir = Path(irma_dir)
+    ignore_segments = set(ignore_segments) if ignore_segments else set()
 
     full_length_segments = []
     padded_segments = []
 
     for fasta_path in sorted(irma_dir.glob("*.fasta")):
         segment = fasta_path.stem
+
+        if segment in ignore_segments:
+            continue
 
         if segment not in references:
             print(
@@ -323,7 +327,13 @@ if __name__ == "__main__":
         choices=("warn", "raise"),
         help="How to handle incomplete sequences: 'warn' or 'raise'.",
     )
+    parser.add_argument(
+        "--ignore-segments",
+        nargs="*",
+        default=[],
+        help="Segment names to skip (e.g. A_PA A_NS).",
+    )
     args = parser.parse_args()
 
     references = load_references(args.reference)
-    pad_irma_dir(args.irma_dir, references, args.errors)
+    pad_irma_dir(args.irma_dir, references, args.errors, args.ignore_segments)

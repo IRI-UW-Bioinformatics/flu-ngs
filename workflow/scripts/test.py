@@ -302,6 +302,62 @@ class TestPadIrmaDirInternalGaps(unittest.TestCase):
             self.assertIn("internal gaps", str(ctx.exception))
 
 
+class TestPadIrmaDirIgnoreSegments(unittest.TestCase):
+    """
+    Tests that pad_irma_dir respects ignore_segments.
+    """
+
+    def test_ignore_segments_skips_segment(self):
+        """pad_irma_dir should skip segments listed in ignore_segments."""
+        ref_seq = "AAAATTTTCCCCGGGG"
+        query_seq = "AAAACCCCGGGG"  # internal gap — would raise without ignore
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            fasta_path = tmpdir / "A_HA.fasta"
+            fasta_path.write_text(f">A_HA\n{query_seq}\n")
+
+            references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
+
+            # Should not raise because A_HA is ignored
+            pis.pad_irma_dir(
+                tmpdir, references, errors="warn", ignore_segments=["A_HA"]
+            )
+
+            # FASTA should be unchanged
+            self.assertEqual(fasta_path.read_text(), f">A_HA\n{query_seq}\n")
+
+    def test_ignore_segments_only_skips_listed(self):
+        """pad_irma_dir should still process segments not in ignore_segments."""
+        ref_seq = "AAAATTTTCCCCGGGG"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            # A_HA: full-length, should be processed normally
+            fasta_path = tmpdir / "A_HA.fasta"
+            fasta_path.write_text(f">A_HA\n{ref_seq}\n")
+
+            # A_NA: will be ignored
+            na_path = tmpdir / "A_NA.fasta"
+            na_path.write_text(f">A_NA\nAAAA\n")
+
+            references = {
+                "A_HA": SeqRecord(Seq(ref_seq), id="A_HA"),
+                "A_NA": SeqRecord(Seq(ref_seq), id="A_NA"),
+            }
+
+            pis.pad_irma_dir(
+                tmpdir, references, errors="warn", ignore_segments=["A_NA"]
+            )
+
+            # Report should mention A_HA but not A_NA
+            report = (tmpdir / "incomplete-sequence-padding-report.txt").read_text()
+            self.assertIn("A_HA", report)
+            self.assertNotIn("A_NA", report)
+
+
 class TestFormatAlignment(unittest.TestCase):
     """
     Tests for pad-incomplete-sequences.format_alignment.
