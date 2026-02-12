@@ -58,8 +58,9 @@ def compute_padding(query_seq, ref_seq):
     target_intervals = aln.aligned[0]  # intervals on reference
     leading_ns = target_intervals[0][0]
     trailing_ns = len(ref_seq) - target_intervals[-1][1]
+    has_internal_gaps = len(target_intervals) > 1
 
-    return leading_ns, trailing_ns, format(aln)
+    return leading_ns, trailing_ns, has_internal_gaps, format(aln)
 
 
 # ---------------------------------------------------------------------------
@@ -140,9 +141,17 @@ def pad_irma_dir(irma_dir, references, errors):
             record = next(SeqIO.parse(fobj, "fasta"))
 
         ref_record = references[segment]
-        leading_ns, trailing_ns, alignment_str = compute_padding(
+        leading_ns, trailing_ns, has_internal_gaps, alignment_str = compute_padding(
             str(record.seq), str(ref_record.seq)
         )
+
+        if has_internal_gaps:
+            raise ValueError(
+                f"{segment}: alignment between consensus ({len(record.seq)} nt) "
+                f"and reference ({len(ref_record.seq)} nt) contains internal "
+                f"gaps. Padding cannot reliably adjust coordinates.\n\n"
+                f"Alignment:\n{alignment_str}"
+            )
 
         if leading_ns == 0 and trailing_ns == 0:
             full_length_segments.append(

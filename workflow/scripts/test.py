@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pandas as pd
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 # Using importlib to handle '-' in .py names
 wg = importlib.import_module("write-gff")
@@ -230,7 +232,7 @@ class TestComputePadding(unittest.TestCase):
         """Full-length sequence should need no padding."""
         ref = "ACGTACGTACGTACGT"
         query = "ACGTACGTACGTACGT"
-        leading, trailing, _aln = pis.compute_padding(query, ref)
+        leading, trailing, *_ = pis.compute_padding(query, ref)
         self.assertEqual(0, leading)
         self.assertEqual(0, trailing)
 
@@ -238,7 +240,7 @@ class TestComputePadding(unittest.TestCase):
         """Sequence missing the start should get leading N's."""
         ref = "AACCTTGGAACCTTGG"
         query = "TTGGAACCTTGG"  # missing first 4 bases
-        leading, trailing, _aln = pis.compute_padding(query, ref)
+        leading, trailing, *_ = pis.compute_padding(query, ref)
         self.assertEqual(4, leading)
         self.assertEqual(0, trailing)
 
@@ -246,7 +248,7 @@ class TestComputePadding(unittest.TestCase):
         """Sequence missing the end should get trailing N's."""
         ref = "AACCTTGGCCAAGGTT"
         query = "AACCTTGGCCAA"  # missing last 4 bases
-        leading, trailing, _aln = pis.compute_padding(query, ref)
+        leading, trailing, *_ = pis.compute_padding(query, ref)
         self.assertEqual(0, leading)
         self.assertEqual(4, trailing)
 
@@ -254,9 +256,50 @@ class TestComputePadding(unittest.TestCase):
         """Sequence missing both ends should get both leading and trailing N's."""
         ref = "AACCTTGGCCAAGGTT"
         query = "CCTTGGCCAAGG"  # missing first 2 and last 2
-        leading, trailing, _aln = pis.compute_padding(query, ref)
+        leading, trailing, *_ = pis.compute_padding(query, ref)
         self.assertEqual(2, leading)
         self.assertEqual(2, trailing)
+
+    def test_no_internal_gaps(self):
+        """Normal leading/trailing shortening should not flag internal gaps."""
+        ref = "AACCTTGGCCAAGGTT"
+        query = "CCTTGGCCAAGG"  # missing first 2 and last 2
+        _, _, has_internal_gaps, _ = pis.compute_padding(query, ref)
+        self.assertFalse(has_internal_gaps)
+
+    def test_internal_gap_detected(self):
+        """A query with an internal deletion should flag internal gaps."""
+        ref = "AAAATTTTCCCCGGGG"
+        query = "AAAACCCCGGGG"  # missing TTTT in the middle
+        _, _, has_internal_gaps, _ = pis.compute_padding(query, ref)
+        self.assertTrue(has_internal_gaps)
+
+
+class TestPadIrmaDirInternalGaps(unittest.TestCase):
+    """
+    Tests that pad_irma_dir raises ValueError when internal gaps are present.
+    """
+
+    def test_raises_on_internal_gaps(self):
+        """pad_irma_dir should raise ValueError for a segment with internal gaps."""
+        ref_seq = "AAAATTTTCCCCGGGG"
+        query_seq = "AAAACCCCGGGG"  # missing TTTT in the middle
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            # Write consensus FASTA with an internal deletion
+            fasta_path = tmpdir / "A_HA.fasta"
+            fasta_path.write_text(f">A_HA\n{query_seq}\n")
+
+            # Build references dict matching the segment name
+            references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
+
+            with self.assertRaises(ValueError) as ctx:
+                pis.pad_irma_dir(tmpdir, references, errors="warn")
+
+            self.assertIn("A_HA", str(ctx.exception))
+            self.assertIn("internal gaps", str(ctx.exception))
 
 
 class TestPadFasta(unittest.TestCase):
