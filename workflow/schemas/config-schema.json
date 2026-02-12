@@ -43,7 +43,7 @@
             "minItems": 0,
             "uniqueItems": true
         },
-        "ignored_segments": {
+        "ignore_segments": {
             "type": "array",
             "items": {
                 "type": "string"
@@ -52,6 +52,7 @@
             "uniqueItems": true
         }
     },
+    "additionalProperties": false,
     "required": [
         "samples",
         "pair",
