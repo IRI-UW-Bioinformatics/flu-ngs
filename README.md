@@ -70,6 +70,12 @@ setup, then activate it with:
 source ~/.virtualenvs/flu-ngs-env/bin/activate
 ```
 
+### Testing
+
+See `workflow/scripts/test.py` for some tests.
+
+`cd` to `workflow/scripts` and execute `./test.py` to run them.
+
 ## Running the workflow
 
 Each time you have samples to run, I would suggest cloning this repository:
