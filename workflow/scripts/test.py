@@ -302,6 +302,42 @@ class TestPadIrmaDirInternalGaps(unittest.TestCase):
             self.assertIn("internal gaps", str(ctx.exception))
 
 
+class TestFormatAlignment(unittest.TestCase):
+    """
+    Tests for pad-incomplete-sequences.format_alignment.
+    """
+
+    def test_identical_sequences(self):
+        """Identical sequences should produce all | in match line."""
+        ref = "ACGTACGT"
+        query = "ACGTACGT"
+        _, _, _, aln_str = pis.compute_padding(query, ref)
+        ref_line, match_line, query_line = aln_str.splitlines()
+        self.assertEqual(ref_line, "ACGTACGT")
+        self.assertEqual(match_line, "||||||||")
+        self.assertEqual(query_line, "ACGTACGT")
+
+    def test_leading_gap(self):
+        """Leading gap should show spaces in match line."""
+        ref = "AACCTTGG"
+        query = "TTGG"  # missing first 4
+        _, _, _, aln_str = pis.compute_padding(query, ref)
+        ref_line, match_line, query_line = aln_str.splitlines()
+        self.assertEqual(ref_line, "AACCTTGG")
+        self.assertEqual(match_line, "    ||||")
+        self.assertEqual(query_line, "----TTGG")
+
+    def test_internal_gap(self):
+        """Internal gap should show spaces in match line, not dashes."""
+        ref = "AAAATTTTCCCCGGGG"
+        query = "AAAACCCCGGGG"  # missing TTTT
+        _, _, _, aln_str = pis.compute_padding(query, ref)
+        ref_line, match_line, query_line = aln_str.splitlines()
+        self.assertEqual(ref_line, "AAAATTTTCCCCGGGG")
+        self.assertEqual(match_line, "||||    ||||||||")
+        self.assertEqual(query_line, "AAAA----CCCCGGGG")
+
+
 class TestPadFasta(unittest.TestCase):
     """
     Tests for pad-incomplete-sequences.pad_fasta.
@@ -372,9 +408,7 @@ class TestShiftTable(unittest.TestCase):
     def test_shifts_position_column(self):
         """Position column in variants table should be shifted."""
         content = (
-            "Reference_Name\tPosition\tTotal\n"
-            "A_PB2\t10\t500\n"
-            "A_PB2\t20\t600\n"
+            "Reference_Name\tPosition\tTotal\n" "A_PB2\t10\t500\n" "A_PB2\t20\t600\n"
         )
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write(content)
@@ -390,10 +424,7 @@ class TestShiftTable(unittest.TestCase):
 
     def test_shifts_upstream_position_column(self):
         """Upstream_Position column in insertions/deletions should be shifted."""
-        content = (
-            "Reference_Name\tUpstream_Position\tInsert\n"
-            "A_PB2\t5\tAA\n"
-        )
+        content = "Reference_Name\tUpstream_Position\tInsert\n" "A_PB2\t5\tAA\n"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write(content)
             path = Path(f.name)
