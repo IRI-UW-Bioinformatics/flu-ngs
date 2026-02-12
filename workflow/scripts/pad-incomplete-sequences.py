@@ -161,15 +161,26 @@ def shift_table(table_path, column_name, offset):
 # Main driver
 # ---------------------------------------------------------------------------
 
-def pad_irma_dir(irma_dir, references, errors, ignore_segments=None):
+def pad_irma_dir(irma_dir, references, errors, ignore_segments=None, pad=True):
     """
     For every *.fasta in *irma_dir*, align to matching reference and pad if
     needed.  Also shift positions in corresponding VCF and table files.
 
     Writes incomplete-sequence-padding-report.txt to *irma_dir*.
+
+    If *pad* is False, write a minimal report and return without processing.
     """
     irma_dir = Path(irma_dir)
     ignore_segments = set(ignore_segments) if ignore_segments else set()
+
+    if not pad:
+        report_path = irma_dir / "incomplete-sequence-padding-report.txt"
+        with open(report_path, "w") as f:
+            f.write("Incomplete-sequence padding report\n")
+            f.write("=" * 60 + "\n\n")
+            f.write("Padding was disabled (pad_incomplete_segments: false).\n")
+            f.write("No sequences were checked or modified.\n")
+        return
 
     full_length_segments = []
     padded_segments = []
@@ -195,6 +206,12 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None):
             str(record.seq), str(ref_record.seq)
         )
 
+        if leading_ns == 0 and trailing_ns == 0:
+            full_length_segments.append(
+                (segment, len(record.seq), len(ref_record.seq))
+            )
+            continue
+
         if has_internal_gaps:
             aln_lines = alignment_str.splitlines()
             wrapped = []
@@ -208,12 +225,6 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None):
                 f"gaps. Padding not implemented for sequences with internal gaps.\n\n"
                 + "\n".join(wrapped)
             )
-
-        if leading_ns == 0 and trailing_ns == 0:
-            full_length_segments.append(
-                (segment, len(record.seq), len(ref_record.seq))
-            )
-            continue
 
         # --- warn / raise ------------------------------------------------
         msg = (
@@ -332,7 +343,14 @@ if __name__ == "__main__":
         default=[],
         help="Segment names to skip (e.g. A_PA A_NS).",
     )
+    parser.add_argument(
+        "--no-pad",
+        action="store_true",
+        default=False,
+        help="Skip padding entirely; write a minimal report and exit.",
+    )
     args = parser.parse_args()
 
     references = load_references(args.reference)
-    pad_irma_dir(args.irma_dir, references, args.errors, args.ignore_segments)
+    pad_irma_dir(args.irma_dir, references, args.errors, args.ignore_segments,
+                 pad=not args.no_pad)

@@ -2,6 +2,7 @@
 
 import unittest
 import importlib
+import importlib.util
 import tempfile
 from pathlib import Path
 
@@ -10,10 +11,23 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-# Using importlib to handle '-' in .py names
-wg = importlib.import_module("write-gff")
-mvi = importlib.import_module("merge-vep-irma")
-pis = importlib.import_module("pad-incomplete-sequences")
+# Resolve paths relative to this file so tests run from any working directory
+SCRIPTS_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = SCRIPTS_DIR.parent.parent
+
+
+def _import_script(name):
+    """Import a script with hyphens in its name by file path."""
+    path = SCRIPTS_DIR / (name + ".py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+wg = _import_script("write-gff")
+mvi = _import_script("merge-vep-irma")
+pis = _import_script("pad-incomplete-sequences")
 
 
 class TestFindAll(unittest.TestCase):
@@ -57,7 +71,7 @@ class TestFindNsSpliceAcceptor(unittest.TestCase):
         Check the correct splice acceptors are found for all sequences in
         ../test-data/ns-seqs.fasta.
         """
-        with open("../test-data/ns-seqs.fas") as fobj:
+        with open(SCRIPTS_DIR / "../test-data/ns-seqs.fas") as fobj:
             records = {
                 record.description: record.seq for record in SeqIO.parse(fobj, "fasta")
             }
@@ -216,7 +230,7 @@ class TestClassifyTransitionTransversion(unittest.TestCase):
         """
         Check that a series is returned, using all relevant tables in results.
         """
-        for path in Path("../../results/irma").glob("*/tables/*-variants.tsv"):
+        for path in (PROJECT_DIR / "results/irma").glob("*/tables/*-variants.tsv"):
             with self.subTest(path=path):
                 df = pd.read_table(path).pipe(mvi.make_index_for_irma_variants)
                 output = df.apply(mvi.classify_transition_transversion, axis=1)
@@ -277,22 +291,40 @@ class TestComputePadding(unittest.TestCase):
 
 class TestPadIrmaDirInternalGaps(unittest.TestCase):
     """
-    Tests that pad_irma_dir raises ValueError when internal gaps are present.
+    Tests for internal-gap handling in pad_irma_dir.
     """
 
-    def test_raises_on_internal_gaps(self):
-        """pad_irma_dir should raise ValueError for a segment with internal gaps."""
+    def test_tolerates_internal_gaps_when_no_padding_needed(self):
+        """Internal gaps with leading_ns=0, trailing_ns=0 should not raise."""
         ref_seq = "AAAATTTTCCCCGGGG"
-        query_seq = "AAAACCCCGGGG"  # missing TTTT in the middle
+        query_seq = "AAAACCCCGGGG"  # missing TTTT in the middle but full span
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
-            # Write consensus FASTA with an internal deletion
             fasta_path = tmpdir / "A_HA.fasta"
             fasta_path.write_text(f">A_HA\n{query_seq}\n")
 
-            # Build references dict matching the segment name
+            references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
+
+            # Should NOT raise — no padding needed, internal gaps are real deletions
+            pis.pad_irma_dir(tmpdir, references, errors="warn")
+
+            # FASTA should be unchanged
+            self.assertEqual(fasta_path.read_text(), f">A_HA\n{query_seq}\n")
+
+    def test_raises_on_internal_gaps_when_padding_needed(self):
+        """Internal gaps combined with leading/trailing padding should raise."""
+        ref_seq = "TTTTAAAAGGGGCCCC"
+        # Aligns as ----AAAA----CCCC → leading_ns=4 + internal gap
+        query_seq = "AAAACCCC"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            fasta_path = tmpdir / "A_HA.fasta"
+            fasta_path.write_text(f">A_HA\n{query_seq}\n")
+
             references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
 
             with self.assertRaises(ValueError) as ctx:
@@ -300,6 +332,50 @@ class TestPadIrmaDirInternalGaps(unittest.TestCase):
 
             self.assertIn("A_HA", str(ctx.exception))
             self.assertIn("internal gaps", str(ctx.exception))
+
+
+class TestPadIrmaDirNoPad(unittest.TestCase):
+    """
+    Tests for pad_irma_dir with pad=False.
+    """
+
+    def test_no_pad_skips_modifications(self):
+        """With pad=False, FASTA should be unchanged and report mentions disabled."""
+        ref_seq = "AACCTTGGCCAAGGTT"
+        query_seq = "CCTTGGCCAAGG"  # would normally be padded
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            fasta_path = tmpdir / "A_HA.fasta"
+            fasta_path.write_text(f">A_HA\n{query_seq}\n")
+
+            references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
+
+            pis.pad_irma_dir(tmpdir, references, errors="warn", pad=False)
+
+            # FASTA should be unchanged
+            self.assertEqual(fasta_path.read_text(), f">A_HA\n{query_seq}\n")
+
+            # Report should mention padding was disabled
+            report = (tmpdir / "incomplete-sequence-padding-report.txt").read_text()
+            self.assertIn("disabled", report.lower())
+
+    def test_no_pad_with_internal_gaps_does_not_raise(self):
+        """With pad=False, even internal gaps should not cause a crash."""
+        ref_seq = "AAAATTTTCCCCGGGG"
+        query_seq = "AACCCCGGGG"  # leading gap + internal deletion
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            fasta_path = tmpdir / "A_HA.fasta"
+            fasta_path.write_text(f">A_HA\n{query_seq}\n")
+
+            references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
+
+            # Should not raise
+            pis.pad_irma_dir(tmpdir, references, errors="warn", pad=False)
 
 
 class TestPadIrmaDirIgnoreSegments(unittest.TestCase):

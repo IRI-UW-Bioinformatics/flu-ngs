@@ -148,6 +148,10 @@ Run parameters are passed to the workflow by a file called `config.json` that sh
 - `ignore_segments`. (Optional). A list of segments that IRMA might find to exclude from
   all downstream processing. Names of segments should match those that IRMA
   uses, e.g. `A_PA`, `A_NA_N1` or `A_NS`.
+- `pad_incomplete_segments`. (Optional, default `true`). Whether to pad
+  incomplete IRMA consensus sequences with N's to restore full-length
+  coordinates. Set to `false` to disable padding and coordinate shifting
+  entirely.
 
 MiSeq example:
 
@@ -172,7 +176,8 @@ MiSeq example:
   "ignore_segments": [
     "A_NS",
     "A_PA"
-  ]
+  ],
+  "pad_incomplete_segments": true
 }
 ```
 
@@ -192,7 +197,8 @@ MinION example:
     "primary",
   ],
   "errors": "warn",
-  "qsr": ["tensqr"]
+  "qsr": ["tensqr"],
+  "pad_incomplete_segments": true
 }
 ```
 

@@ -50,6 +50,9 @@
             },
             "minItems": 0,
             "uniqueItems": true
+        },
+        "pad_incomplete_segments": {
+            "type": "boolean"
         }
     },
     "additionalProperties": false,
