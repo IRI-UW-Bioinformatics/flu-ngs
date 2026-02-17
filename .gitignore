@@ -8,3 +8,4 @@ processed_reads
 **__pycache__
 qc-config.json
 irma-config.json
+.claude
