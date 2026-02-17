@@ -139,6 +139,10 @@ if __name__ == "__main__":
         print("\t".join(HEADERS), file=sys.stdout)
         exit(0)
 
+    # Phase column comes from QSR analysis; absent when qsr is disabled
+    if "Phase" not in df.columns:
+        df["Phase"] = pd.NA
+
     if df.empty:
         df.to_csv(sys.stdout, sep="\t")
 
