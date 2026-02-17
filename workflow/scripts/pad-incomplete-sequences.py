@@ -184,6 +184,7 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None, pad=True):
 
     full_length_segments = []
     padded_segments = []
+    skipped_segments = []
 
     for fasta_path in sorted(irma_dir.glob("*.fasta")):
         segment = fasta_path.stem
@@ -213,18 +214,33 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None, pad=True):
             continue
 
         if has_internal_gaps:
-            aln_lines = alignment_str.splitlines()
-            wrapped = []
-            for start in range(0, len(aln_lines[0]), 80):
-                for line in aln_lines:
-                    wrapped.append(line[start:start + 80])
-                wrapped.append("")
-            raise ValueError(
-                f"{segment}: alignment between consensus ({len(record.seq)} nt) "
-                f"and reference ({len(ref_record.seq)} nt) contains internal "
-                f"gaps. Padding not implemented for sequences with internal gaps.\n\n"
-                + "\n".join(wrapped)
+            msg = (
+                f"WARNING: {segment}: consensus ({len(record.seq)} nt) has "
+                f"internal gaps relative to reference ({len(ref_record.seq)} nt). "
+                f"Padding FASTA but skipping VCF/table coordinate shifting. "
+                f"Renaming {segment}.vcf to {segment}.vcf.INCOMPLETE_SEQUENCE "
+                f"to exclude from downstream variant analysis."
             )
+            print(msg, file=sys.stderr)
+
+            # Pad the FASTA so reading frame is correct for manual inspection
+            pad_fasta(fasta_path, leading_ns, trailing_ns)
+
+            # Rename VCF to exclude segment from downstream processing
+            vcf_path = irma_dir / f"{segment}.vcf"
+            if vcf_path.exists():
+                vcf_path.rename(irma_dir / f"{segment}.vcf.INCOMPLETE_SEQUENCE")
+            else:
+                # The vcf file should always exist. But if it doesn't, then it
+                # wouldn't be found by collect_segments in irma.smk anyway! So
+                # we don't need to do anything special here.
+                ...
+
+            skipped_segments.append(
+                (segment, len(record.seq), len(ref_record.seq),
+                 leading_ns, trailing_ns, alignment_str)
+            )
+            continue
 
         # --- warn / raise ------------------------------------------------
         msg = (
@@ -232,10 +248,11 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None, pad=True):
             f"length {len(ref_record.seq)}, padding {leading_ns} leading "
             f"and {trailing_ns} trailing N's"
         )
-        print(msg, file=sys.stderr)
 
         if errors == "raise":
             raise ValueError(msg)
+        else:
+            print(msg, file=sys.stderr)
 
         warnings.warn(msg)
 
@@ -269,11 +286,15 @@ def pad_irma_dir(irma_dir, references, errors, ignore_segments=None, pad=True):
                     shift_table(del_path, "Upstream_Position", leading_ns)
 
     # --- write report ----------------------------------------------------
-    write_report(irma_dir, full_length_segments, padded_segments)
+    write_report(irma_dir, full_length_segments, padded_segments,
+                 skipped_segments)
 
 
-def write_report(irma_dir, full_length_segments, padded_segments):
+def write_report(irma_dir, full_length_segments, padded_segments,
+                 skipped_segments=None):
     """Write incomplete-sequence-padding-report.txt to *irma_dir*."""
+    if skipped_segments is None:
+        skipped_segments = []
     report_path = irma_dir / "incomplete-sequence-padding-report.txt"
     with open(report_path, "w") as f:
         f.write("Incomplete-sequence padding report\n")
@@ -304,6 +325,34 @@ def write_report(irma_dir, full_length_segments, padded_segments):
                 f.write(f"    Reference length: {ref_len}\n")
                 f.write(f"    Leading N's:  {leading}\n")
                 f.write(f"    Trailing N's: {trailing}\n")
+                f.write(f"\n    Alignment (reference on top, consensus on bottom):\n\n")
+                aln_lines = alignment_str.splitlines()
+                width = 80
+                for start in range(0, len(aln_lines[0]), width):
+                    for line in aln_lines:
+                        f.write(f"      {line[start:start+width]}\n")
+                    f.write("\n")
+
+        f.write("\n")
+
+        # --- skipped segments (internal gaps) ----------------------------
+        f.write("Segments skipped (internal gaps)\n")
+        f.write("-" * 60 + "\n")
+        f.write("(Consensus has internal gaps relative to reference. FASTA was\n")
+        f.write("padded for reading frame, but VCF/table positions were NOT\n")
+        f.write("shifted. The .vcf file was renamed to .vcf.INCOMPLETE_SEQUENCE\n")
+        f.write("to exclude the segment from downstream variant analysis.)\n\n")
+        if not skipped_segments:
+            f.write("  (none)\n")
+        else:
+            for (segment, query_len, ref_len,
+                 leading, trailing, alignment_str) in skipped_segments:
+                f.write(f"  {segment}\n")
+                f.write(f"    Consensus length: {query_len}\n")
+                f.write(f"    Reference length: {ref_len}\n")
+                f.write(f"    Leading N's:  {leading}\n")
+                f.write(f"    Trailing N's: {trailing}\n")
+                f.write(f"    VCF renamed:  {segment}.vcf -> {segment}.vcf.INCOMPLETE_SEQUENCE\n")
                 f.write(f"\n    Alignment (reference on top, consensus on bottom):\n\n")
                 aln_lines = alignment_str.splitlines()
                 width = 80

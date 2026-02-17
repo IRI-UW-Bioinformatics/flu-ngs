@@ -151,7 +151,15 @@ Run parameters are passed to the workflow by a file called `config.json` that sh
 - `pad_incomplete_segments`. (Optional, default `true`). Whether to pad
   incomplete IRMA consensus sequences with N's to restore full-length
   coordinates. Set to `false` to disable padding and coordinate shifting
-  entirely.
+  entirely. When enabled, a report is written to
+  `results/{order}/irma/{sample}_{pair}/incomplete-sequence-padding-report.txt`
+  detailing which segments were padded, which were full-length, and which were
+  skipped due to internal gaps. If a consensus sequence needs padding AND has
+  internal gaps relative to the reference, the FASTA is padded for correct
+  reading frame but the `.vcf` file is renamed to `.vcf.INCOMPLETE_SEQUENCE` to
+  exclude that segment from downstream variant analysis. Original VCF data is
+  preserved in the renamed file and the raw IRMA output is always kept in
+  `irma-raw/`.
 
 MiSeq example:
 
