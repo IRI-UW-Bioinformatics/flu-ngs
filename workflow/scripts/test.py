@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+import sys
 import unittest
 import importlib
 import importlib.util
@@ -313,8 +315,8 @@ class TestPadIrmaDirInternalGaps(unittest.TestCase):
             # FASTA should be unchanged
             self.assertEqual(fasta_path.read_text(), f">A_HA\n{query_seq}\n")
 
-    def test_raises_on_internal_gaps_when_padding_needed(self):
-        """Internal gaps combined with leading/trailing padding should raise."""
+    def test_skips_segment_with_internal_gaps_when_padding_needed(self):
+        """Internal gaps + padding should skip segment: pad FASTA, rename VCF."""
         ref_seq = "TTTTAAAAGGGGCCCC"
         # Aligns as ----AAAA----CCCC → leading_ns=4 + internal gap
         query_seq = "AAAACCCC"
@@ -325,13 +327,39 @@ class TestPadIrmaDirInternalGaps(unittest.TestCase):
             fasta_path = tmpdir / "A_HA.fasta"
             fasta_path.write_text(f">A_HA\n{query_seq}\n")
 
+            vcf_path = tmpdir / "A_HA.vcf"
+            vcf_path.write_text(
+                "##fileformat=VCFv4.2\n"
+                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                "A_HA\t5\t.\tA\tG\t.\t.\tDP=100\n"
+            )
+
             references = {"A_HA": SeqRecord(Seq(ref_seq), id="A_HA")}
 
-            with self.assertRaises(ValueError) as ctx:
-                pis.pad_irma_dir(tmpdir, references, errors="warn")
+            # Should NOT raise — segment is skipped gracefully
+            with open(os.devnull, "w") as devnull:
+                _orig_stderr = sys.stderr
+                sys.stderr = devnull
+                try:
+                    pis.pad_irma_dir(tmpdir, references, errors="warn")
+                finally:
+                    sys.stderr = _orig_stderr
 
-            self.assertIn("A_HA", str(ctx.exception))
-            self.assertIn("internal gaps", str(ctx.exception))
+            # FASTA should be padded with leading N's
+            with open(fasta_path) as fobj:
+                record = next(SeqIO.parse(fobj, "fasta"))
+            self.assertTrue(str(record.seq).startswith("NNNN"))
+
+            # VCF should be renamed
+            self.assertFalse(vcf_path.exists())
+            self.assertTrue(
+                (tmpdir / "A_HA.vcf.INCOMPLETE_SEQUENCE").exists()
+            )
+
+            # Report should mention skipped segment
+            report = (tmpdir / "incomplete-sequence-padding-report.txt").read_text()
+            self.assertIn("A_HA", report)
+            self.assertIn("internal gaps", report.lower())
 
 
 class TestPadIrmaDirNoPad(unittest.TestCase):
