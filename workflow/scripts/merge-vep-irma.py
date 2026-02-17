@@ -194,7 +194,9 @@ if __name__ == "__main__":
         .drop(columns=["Context", "Called", "Length"])
     )
 
-    df_irma = pd.concat([df_irma_var, df_irma_ins, df_irma_del])
+    df_irma = pd.concat(
+        [df for df in (df_irma_var, df_irma_ins, df_irma_del) if not df.empty]
+    )
 
     df_out = (
         df_vep.join(df_irma)

@@ -147,15 +147,16 @@ rule make_gffgz:
     input:
         "results/{order}/irma/{sample}_{pair}/{segment}.gff",
     output:
-        "results/{order}/irma/{sample}_{pair}/{segment}.gff.gz",
+        gff="results/{order}/irma/{sample}_{pair}/{segment}.gff.gz",
+        tbi="results/{order}/irma/{sample}_{pair}/{segment}.gff.gz.tbi",
     log:
         ".logs/write_gffgz/write_gffgz_{sample}_{pair}_{segment}_{order}.log",
     conda:
         "envs/tabix.yaml"
     shell:
         """
-        bgzip -c {input} > {output} 2> {log}
-        tabix -p gff {output} 2> {log}
+        bgzip -c {input} > {output.gff} 2> {log}
+        tabix -p gff {output.gff} 2>> {log}
         """
 
 
