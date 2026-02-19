@@ -44,6 +44,7 @@ rule all:
         expand_order("results/{order}/xlsx/variants-mcc-flat-ordered.xlsx"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/aa.fasta"),
         expand_sample_pair_order("results/{order}/seq/{sample}_{pair}/nt.fasta"),
+        expand_order("results/{order}/fasta/.done"),
         expand(
             "results/{order}/qsr/{sample}/{qsr_type}_irma_snps.pdf",
             order=config["order"],
@@ -239,6 +240,71 @@ def collect_segments(path, default_wildcards=None):
         return expand(path, segment=segments, **wildcards)
 
     return fun
+
+
+def collect_fasta_inputs(wildcards):
+    """
+    Collect irma-raw and irma FASTA files for a given segment across all samples.
+    """
+    irma_raw = []
+    irma_padded = []
+    for sample in config["samples"]:
+        for pair in config["pair"]:
+            irma_dir = checkpoints.find_irma_output.get(
+                order=wildcards.order, sample=sample, pair=pair
+            ).output[0]
+            found_segments = set(p.stem for p in Path(irma_dir).glob("*.fasta"))
+            ignored_segments = set(config.get("ignore_segments", []))
+            segments = found_segments - ignored_segments
+            if wildcards.segment in segments:
+                irma_raw.append(
+                    f"results/{wildcards.order}/irma-raw/{sample}_{pair}/{wildcards.segment}.fasta"
+                )
+                irma_padded.append(
+                    f"results/{wildcards.order}/irma/{sample}_{pair}/{wildcards.segment}.fasta"
+                )
+    return {"irma_raw": irma_raw, "irma_padded": irma_padded}
+
+
+rule collect_fasta:
+    input:
+        unpack(collect_fasta_inputs),
+    output:
+        "results/{order}/fasta/{segment}.fasta",
+    shell:
+        """
+        workflow/scripts/collect-fasta.py \
+            --irma-raw {input.irma_raw} \
+            --irma-padded {input.irma_padded} \
+            --segment {wildcards.segment} > {output}
+        """
+
+
+def collect_all_fasta_segments(wildcards):
+    """
+    Discover all segments across all samples for the fasta output.
+    """
+    all_segments = set()
+    for sample in config["samples"]:
+        for pair in config["pair"]:
+            irma_dir = checkpoints.find_irma_output.get(
+                order=wildcards.order, sample=sample, pair=pair
+            ).output[0]
+            found_segments = set(p.stem for p in Path(irma_dir).glob("*.fasta"))
+            ignored_segments = set(config.get("ignore_segments", []))
+            all_segments |= found_segments - ignored_segments
+    return expand(
+        "results/{order}/fasta/{segment}.fasta",
+        order=wildcards.order,
+        segment=sorted(all_segments),
+    )
+
+
+rule collect_all_fasta:
+    input:
+        collect_all_fasta_segments,
+    output:
+        touch("results/{order}/fasta/.done"),
 
 
 rule concat_segment_aa:
